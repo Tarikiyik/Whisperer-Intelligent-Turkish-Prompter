@@ -1,103 +1,118 @@
+"use client";
+
 import Image from "next/image";
+import { useState ,ChangeEvent} from "react";
+import {useRouter} from "next/navigation";
 
 export default function Home() {
-  return (
-    <div className="grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20 font-[family-name:var(--font-geist-sans)]">
-      <main className="flex flex-col gap-[32px] row-start-2 items-center sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <ol className="list-inside list-decimal text-sm/6 text-center sm:text-left font-[family-name:var(--font-geist-mono)]">
-          <li className="mb-2 tracking-[-.01em]">
-            Get started by editing{" "}
-            <code className="bg-black/[.05] dark:bg-white/[.06] px-1 py-0.5 rounded font-[family-name:var(--font-geist-mono)] font-semibold">
-              app/page.tsx
-            </code>
-            .
-          </li>
-          <li className="tracking-[-.01em]">
-            Save and see your changes instantly.
-          </li>
-        </ol>
+  const router = useRouter();
+  const [scriptContent, setScriptContent] = useState("");
+  const [fileUploaded, setFileUploaded] = useState(false);
 
-        <div className="flex gap-4 items-center flex-col sm:flex-row">
-          <a
-            className="rounded-full border border-solid border-transparent transition-colors flex items-center justify-center bg-foreground text-background gap-2 hover:bg-[#383838] dark:hover:bg-[#ccc] font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 sm:w-auto"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
-            />
-            Deploy now
-          </a>
-          <a
-            className="rounded-full border border-solid border-black/[.08] dark:border-white/[.145] transition-colors flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 w-full sm:w-auto md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Read our docs
-          </a>
+  const handleFileChange = (event: ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file){
+      const reader = new FileReader();
+
+      reader.onload = (e) => {
+        const text = e.target?.result;
+        if (typeof text === "string") {
+          setScriptContent(text);
+          setFileUploaded(true);
+        }
+        else{
+          console.error("File content is not a string");
+        }
+      }
+      reader.readAsText(file);
+    }
+  }
+
+  const handleFileAreaChange = (event: ChangeEvent<HTMLTextAreaElement>) => {
+    const text = event.target.value;
+    setScriptContent(text);
+  }
+
+  const scrollToBottom = () => {
+    window.scrollTo({
+      top: 1200,
+      behavior: "smooth",
+    });
+  };
+
+  const handleNavigate = () => {
+    sessionStorage.setItem("scriptContent", scriptContent);
+    router.push('/prompter');
+  }
+  
+  return (
+    <div className="flex flex-col">
+      <div className="m-8 w-7xl h-72 flex items-center justify-between gap-10 px-6 bg-[#0f172a] rounded-2xl shadow-[0_35px_60px_-15px_rgba(0,0,0,0.5)]">        <Image
+          src="/images/homepage_img1.png"
+          alt="Whisperer illustration"
+          width={240}
+          height={240}
+          priority
+          className="rounded-xl"
+        />
+        <div className="text-white text-4xl font-semibold leading-snug max-w-2xl">
+          <span className="bg-gradient-to-r from-green-400 to-blue-500 bg-clip-text text-transparent">
+            Whisperer
+          </span> helps you follow your script, line by line,<br />with real-time speech tracking.
         </div>
-      </main>
-      <footer className="row-start-3 flex gap-[24px] flex-wrap items-center justify-center">
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
+      </div>
+
+      <div className="self-end m-8 w-7xl h-72 flex items-center justify-between gap-10 px-6 bg-[#0f172a] rounded-2xl shadow-[0_35px_60px_-15px_rgba(0,0,0,0.5)]">
+      <div className="text-white text-4xl font-semibold leading-snug max-w-2xl">
+      Powered by real-time speech recognition and smart Turkish NLP.  
+        </div>
+        <Image
+          src="/images/homepage_img2.png"
+          alt="Whisperer illustration"
+          width={520}
+          height={10}
+          priority
+          className="rounded-xl"
+        />
+        
+      </div>
+      <div className="self-center  m-4 mb-32 w-96 h-20 shadow-[0_35px_80px_10px_rgba(0,0,0,0.8)]">
+      <button 
+      onClick={scrollToBottom}
+      className="bg-gradient-to-r from-blue-600 to-indigo-700 transition-colors duration-300 hover:from-blue-700 hover:to-indigo-800 cursor-pointer text-2xl font-semibold text-white w-full h-full rounded-lg">
+        Try Whisperer
+      </button>
+      </div>
+      <div id="script-section" className="self-center m-16  max-h-screen h-[90vh] max-w-full w-[75%]">
+      <div className="w-full h-[60vh] flex flex-col items-center">
+          <textarea
+            placeholder="Paste your script here..." 
+            className="h-full w-full p-4 bg-[#0f172a] text-gray-200 rounded-lg border border-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none text-lg"
+            value={scriptContent}
+            onChange={handleFileAreaChange}
+          ></textarea>
+        </div>
+        <div className="mt-4">
+          <h1 className="text-2xl mb-4">Or you can upload a script file</h1>
+          <input
+            type="file"
+            accept=".txt"
+            id="file-upload"
+            className="hidden"
+            onChange={handleFileChange}
           />
-          Learn
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-          />
-          Examples
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to nextjs.org →
-        </a>
-      </footer>
+          <label
+            htmlFor="file-upload"
+            className={`cursor-pointer ${fileUploaded ? 'bg-blue-700' : 'bg-[#0f172a]'}  transition-colors duration-200 hover:bg-blue-600 text-gray-200 rounded-lg border border-gray-700 py-2 px-8 text`}
+            >
+              {fileUploaded ? "File uploaded" : "Upload a script file"}
+          </label>
+          <p className="text-xs text-gray-500 mt-2">Supports only .txt</p>
+        </div>
+        <div className="mt-8 w-full h-16 flex justify-center">
+          <button onClick={handleNavigate} className="bg-blue-800 transition-colors duration-200 hover:bg-blue-700 w-full h-full cursor-pointer rounded-lg text-lg font-medium">Start Prompter</button>
+        </div>
+      </div>
     </div>
   );
 }

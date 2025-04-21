@@ -39,3 +39,34 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# Data & Secrets
+/backend/data/                    # transcript files, etc.
+/backend/data/*.txt
+/secrets/                         # API keys and credential files
+
+# pytest
+.pytest_cache/
+
+# Editor backups / cookies / history
+*.swp
+*.swo
+
+# pip artifacts
+pip-wheel-metadata/
+pip-selfcheck.json
+
+# Byte‑compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+
+# Virtual environments :contentReference[oaicite:2]{index=2}
+venv/
+.venv/
+env/
+ENV/
+python_env/
+__venv__/
+

@@ -1,7 +1,7 @@
 // app/prompter/page.tsx
 'use client';
 
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback, useEffect, useRef } from 'react';
 import useDeepgramRaw from '@/hooks/useDeepgramRaw';
 import useBackend from '@/hooks/useBackend';
 
@@ -12,6 +12,33 @@ export default function Prompter() {
   const [paused, setPaused] = useState(false);
   const [scriptContent, setScriptContent] = useState('');
   const [scriptReady, setScriptReady] = useState(false);
+
+  // Add ref for the script container and transcript log
+  const scriptContainerRef = useRef<HTMLDivElement>(null);
+  const transcriptLogRef = useRef<HTMLDivElement>(null);
+
+  // Auto-scroll effect when highlighted text changes
+  useEffect(() => {
+    if (scriptContainerRef.current) {
+      const highlightedElement = scriptContainerRef.current.querySelector('.highlight');
+      if (highlightedElement) {
+        highlightedElement.scrollIntoView({
+          behavior: 'smooth',
+          block: 'center',
+        });
+      }
+    }
+  }, [currentSentenceIndex]);
+
+  // Auto-scroll effect for the transcript log
+  useEffect(() => {
+    if(lines.length > 0 && transcriptLogRef.current) {
+      const lastLine = transcriptLogRef.current.lastElementChild;
+      if (lastLine) {
+        lastLine.scrollIntoView({ behavior: 'smooth' });
+      }
+    }
+  }, [lines.length]);
 
   // Get script content only on client-side after component mounts
   useEffect(() => {
@@ -24,7 +51,7 @@ export default function Prompter() {
 
   // Open the backend WS, send init_script, and listen for events
   const { sendTranscript, isConnected } = useBackend(
-    started && scriptReady,  // Only start when both conditions are true
+    started && scriptReady,
     scriptContent,
     (e) => {
       console.log("Backend event:", e);
@@ -81,23 +108,28 @@ export default function Prompter() {
         </div>
       )}
 
-      <div className="w-full max-w-3xl bg-[#0f172a] border border-gray-700 rounded-lg p-4">
+      <div className="w-full max-w-5xl bg-[#0f172a] border border-gray-700 rounded-lg p-4">
         {/* Script with highlighted current sentence */}
-        <div className="mb-4 leading-7">
+        <div 
+          ref={scriptContainerRef}
+          className="mb-4 leading-7 max-h-52 overflow-y-auto no-scrollbar"
+        >
           {scriptContent
             .split(/(?<=[.!?])\s+/)
             .map((sentence, idx) => (
-              <span
+              <p
                 key={idx}
                 className={idx === currentSentenceIndex ? 'highlight' : ''}
               >
                 {sentence + ' '}
-              </span>
+              </p>
             ))}
         </div>
 
         {/* Transcription log */}
-        <div className="border-t border-gray-700 pt-4 h-40 overflow-y-auto">
+        <div className="border-t border-gray-700 pt-4 h-40 overflow-y-auto no-scrollbar"
+           ref={transcriptLogRef}
+        >
           {lines.length > 0 ? (
             lines.map((l, i) => (
               <p key={i} className="text-gray-200 mb-2">

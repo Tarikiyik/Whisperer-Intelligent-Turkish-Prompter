@@ -43,7 +43,8 @@ next-env.d.ts
 # Data & Secrets
 /backend/data/                    # transcript files, etc.
 /backend/data/*.txt
-/secrets/                         # API keys and credential files
+/backend/secrets/
+/backend/secrets/*                     # API keys and credential files
 
 # pytest
 .pytest_cache/

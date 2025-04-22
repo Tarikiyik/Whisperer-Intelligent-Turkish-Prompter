@@ -1,8 +1,9 @@
 # backend/main.py
-import os, asyncio, json
+import os, asyncio, threading
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
-from speech_monitor import SpeechMonitor   # existing file
+from speech_monitor import SpeechMonitor
+from tts_service import TurkishTTS
 
 DATA_DIR = os.path.join(os.path.dirname(__file__), "data")
 os.makedirs(DATA_DIR, exist_ok=True)
@@ -22,31 +23,39 @@ async def websocket_bridge(ws: WebSocket):
     await ws.accept()
     try:
         first = await asyncio.wait_for(ws.receive_json(), timeout=5)
-        
-        # Verify message type
         if first.get("type") != "init_script":
-            print(f"❌ Unexpected message type: {first.get('type')}")
-            await ws.close(1008, "Expected init_script message")
-            return
-            
-        script_text = first["script"]
-        print(f"✅ Received script: {len(script_text)} characters")
-        
-        open(TRANSCRIPT_FILE, "w").close()  # reset file
-        
-        # set up SpeechMonitor ---------------------------------
+            await ws.close(1008, "Expected init_script message"); return
+
+        script_text = first["script"];  open(TRANSCRIPT_FILE, "w").close()
+
+        # ─── TTS thread ───────────────────────────────────────
+        tts = TurkishTTS("./secrets/google-tts-key.json")
+        tts_thread = threading.Thread(
+            target=tts.stream_synthesize,
+            args=(script_text,),
+            kwargs=dict(speaking_rate=1.0, segment_delay=0.0),
+            daemon=True,
+        )
+        tts_thread.start()
+
+        # ─── SpeechMonitor ────────────────────────────────────
         monitor = SpeechMonitor(
             transcript_file=TRANSCRIPT_FILE,
             expected_script=script_text,
-            threshold=2.0,
-            similarity_threshold=0.75,
+            threshold=3.0, # Change this to the desired threshold for silence detection
+            similarity_threshold=0.7, # Change this to the desired threshold for similarity detection
         )
-
         monitor.set_pause_callback(
-            lambda: asyncio.create_task(ws.send_json({"event": "pause"}))
+            lambda: (
+                tts.pause_feeding(),
+                asyncio.create_task(ws.send_json({"event": "pause"})),
+            )
         )
         monitor.set_resume_callback(
-            lambda: asyncio.create_task(ws.send_json({"event": "resume"}))
+            lambda: (
+                tts.resume_feeding(),
+                asyncio.create_task(ws.send_json({"event": "resume"})),
+            )
         )
         monitor.set_sentence_update_callback(
             lambda idx: asyncio.create_task(ws.send_json(
@@ -54,7 +63,7 @@ async def websocket_bridge(ws: WebSocket):
         )
 
         monitor_task = asyncio.create_task(monitor.run())
-
+        # ─── pump transcripts from frontend ───────────────────
         try:
             while True:
                 msg = await ws.receive_json()
@@ -66,6 +75,4 @@ async def websocket_bridge(ws: WebSocket):
         finally:
             monitor_task.cancel()
     except (asyncio.TimeoutError, WebSocketDisconnect) as e:
-        print(f"👻 Connection error: {e}")
         await ws.close()
-        return

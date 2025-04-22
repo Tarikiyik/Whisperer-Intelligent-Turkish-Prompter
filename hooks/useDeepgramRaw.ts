@@ -76,7 +76,7 @@ export default function useDeepgramRaw(
           language: 'tr',
           punctuate: true,
           model: 'nova-2',
-          endpointing: 250,
+          endpointing: 200,
         });
 
         // 7) Wire up event handlers

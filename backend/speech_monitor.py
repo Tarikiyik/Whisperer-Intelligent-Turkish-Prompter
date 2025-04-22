@@ -34,7 +34,12 @@ class SpeechMonitor:
     This module is now intended to work in coordination with a bidirectional streaming TTS system that feeds
     text segments (possibly using a fixed word count) while the SpeechMonitor uses complete sentences for comparison.
     """
-    def __init__(self, transcript_file: str, expected_script: str, threshold: float = 2.0, similarity_threshold: float = 0.8):
+    def __init__( self,
+                  transcript_file: str,
+                  expected_script: str,
+                  threshold: float = 2.0,           
+                  similarity_threshold: float = 0.70 
+                  ):
         self.transcript_file = transcript_file
         self.expected_script = expected_script
         self.threshold = threshold

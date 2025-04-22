@@ -69,7 +69,7 @@ class TurkishTTS:
             logging.error(f"TTS Error: {e}")
             return None
 
-    def stream_synthesize(self, text: str, speaking_rate: float = 1.0,
+    def stream_synthesize(self, text: str, speaking_rate: float = 1.2,
                           effects_profile: list = ["headphone-class-device"],
                           segment_delay: float = 1.0, start_segment: int = 0) -> int:
         """

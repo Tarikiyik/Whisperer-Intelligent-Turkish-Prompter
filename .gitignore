@@ -71,3 +71,4 @@ ENV/
 python_env/
 __venv__/
 
+hooks/useVAD.ts

@@ -7,72 +7,48 @@ from tts_service import TurkishTTS
 
 DATA_DIR = os.path.join(os.path.dirname(__file__), "data")
 os.makedirs(DATA_DIR, exist_ok=True)
-TRANSCRIPT_FILE = os.path.join(DATA_DIR, "transcript.txt")
+TRANSCRIPT = os.path.join(DATA_DIR, "transcript.txt")
 
 app = FastAPI()
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["http://localhost:3000"],
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
+    allow_credentials=True, allow_methods=["*"], allow_headers=["*"]
 )
 
 @app.websocket("/ws")
-async def websocket_bridge(ws: WebSocket):
+async def bridge(ws: WebSocket):
     await ws.accept()
+    mon_task = None
     try:
         first = await asyncio.wait_for(ws.receive_json(), timeout=5)
         if first.get("type") != "init_script":
-            await ws.close(1008, "Expected init_script message"); return
+            await ws.close(1008, "Need init_script"); return
+        script = first["script"]; open(TRANSCRIPT, "w").close()
 
-        script_text = first["script"];  open(TRANSCRIPT_FILE, "w").close()
-
-        # ─── TTS thread ───────────────────────────────────────
         tts = TurkishTTS("./secrets/google-tts-key.json")
-        tts_thread = threading.Thread(
-            target=tts.stream_synthesize,
-            args=(script_text,),
-            kwargs=dict(speaking_rate=1.0, segment_delay=0.0),
-            daemon=True,
-        )
-        tts_thread.start()
+        threading.Thread(target=tts.stream_synthesize,
+                         args=(script,), kwargs=dict(segment_delay=0.0),
+                         daemon=True).start()
 
-        # ─── SpeechMonitor ────────────────────────────────────
-        monitor = SpeechMonitor(
-            transcript_file=TRANSCRIPT_FILE,
-            expected_script=script_text,
-            threshold=3.0, # Change this to the desired threshold for silence detection
-            similarity_threshold=0.7, # Change this to the desired threshold for similarity detection
-        )
-        monitor.set_pause_callback(
-            lambda: (
-                tts.pause_feeding(),
-                asyncio.create_task(ws.send_json({"event": "pause"})),
-            )
-        )
-        monitor.set_resume_callback(
-            lambda: (
-                tts.resume_feeding(),
-                asyncio.create_task(ws.send_json({"event": "resume"})),
-            )
-        )
-        monitor.set_sentence_update_callback(
-            lambda idx: asyncio.create_task(ws.send_json(
-                {"event": "highlight", "index": idx}))
-        )
+        mon = SpeechMonitor(TRANSCRIPT, script, threshold=3.0, similarity_threshold=0.70)
+        mon.set_pause_callback (lambda: (tts.pause_feeding(),  asyncio.create_task(ws.send_json({"event":"pause"}))))
+        mon.set_resume_callback(lambda: (tts.resume_feeding(), asyncio.create_task(ws.send_json({"event":"resume"}))))
+        mon.set_sentence_update_callback(lambda idx: asyncio.create_task(ws.send_json({"event":"highlight","index":idx})))
+        mon_task = asyncio.create_task(mon.run())
 
-        monitor_task = asyncio.create_task(monitor.run())
-        # ─── pump transcripts from frontend ───────────────────
-        try:
-            while True:
-                msg = await ws.receive_json()
-                if msg["type"] == "transcript":
-                    with open(TRANSCRIPT_FILE, "a", encoding="utf-8") as f:
-                        f.write(msg["text"] + "\n")
-        except WebSocketDisconnect:
-            print("❌ Frontend disconnected")
-        finally:
-            monitor_task.cancel()
-    except (asyncio.TimeoutError, WebSocketDisconnect) as e:
-        await ws.close()
+        while True:
+            msg = await ws.receive_json()
+            typ = msg.get("type")
+            if typ == "transcript":
+                with open(TRANSCRIPT, "a", encoding="utf-8") as fh:
+                    fh.write(msg["text"] + "\n")
+            elif typ == "vad" and msg.get("status") == "silence_start":
+                tts.pause_feeding()
+                if msg.get("dur") == "long":
+                    
+                    pass
+    except WebSocketDisconnect:
+        pass
+    finally:
+        mon_task and mon_task.cancel()

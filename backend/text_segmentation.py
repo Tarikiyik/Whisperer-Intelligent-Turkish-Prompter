@@ -1,51 +1,62 @@
-"""
-This module provides a function to segment a text script into smaller units.
-It splits the input script using punctuation and further subdivides long sentences
-into segments of a maximum number of words. When a sentence is split, every segment
-except the final one is ensured to end with a terminal punctuation mark, so that
-each segment is processed as a complete utterance by the TTS system.
-"""
-
+# text_segmentation.py  ✨ drop-in replacement
 import re
 import logging
+from typing import List
 
 logging.basicConfig(level=logging.INFO)
 
-def segment_script(text: str, max_words: int = 40) -> list:
-    """
-    Splits the input script into smaller segments.
+# ── tunable parameters (change here only) ──────────────────────────────
+MAX_WORDS = 10      # hard cap size of a sub-segment
+MIN_WORDS = 4       # if the *last* fragment is shorter, merge it back
+WINDOW     = 3      # how far we can look back for a nicer split point
+# ───────────────────────────────────────────────────────────────────────
 
-    First, the text is split using punctuation marks (period, exclamation, question marks)
-    followed by whitespace. If any sentence is longer than the specified max_words, it is
-    further subdivided into segments containing at most max_words.
-    For sentences that are split, every segment except the last will have terminal punctuation appended
-    if it does not already end with a period, exclamation mark, or question mark.
+# negative look-behind avoids “20.”,  “7.”  etc. being treated as EOS
+_SENT_BOUNDARY = re.compile(r'(?<!\d)(?<=[.!?])\s+')
+# simple clause hints to sound more natural
+_CLAUSE_BREAK  = re.compile(r',|;|\s+(?:ve|ama|fakat)\s+', flags=re.I)
 
-    Args:
-        text (str): The full script as a string.
-        max_words (int): Maximum number of words per segment.
 
-    Returns:
-        list: A list of text segments.
-    """
-    # Split the text on punctuation marks followed by whitespace.
-    sentences = re.split(r'(?<=[.!?])\s+', text.strip())
+def _split_sentences(text: str) -> List[str]:
+    return [s.strip() for s in _SENT_BOUNDARY.split(text) if s.strip()]
+
+
+def _yield_chunks(sentence: str) -> List[str]:
+    """Smart sliding-window splitter that prefers clause marks."""
+    words, i, out = sentence.split(), 0, []
+    while i < len(words):
+        j = min(i + MAX_WORDS, len(words))
+        # look backwards ≤WINDOW tokens for a nicer boundary
+        for k in range(j, i, -1):
+            if j - k > WINDOW:
+                break
+            snippet = ' '.join(words[i:k])
+            if _CLAUSE_BREAK.search(snippet):
+                j = k
+                break
+        chunk = ' '.join(words[i:j]).strip()
+        out.append(chunk)
+        i = j
+    # merge last short bit, if any
+    if len(out) > 1 and len(out[-1].split()) < MIN_WORDS:
+        out[-2] = f"{out[-2]} {out[-1]}".strip()
+        out.pop()
+    # final cleanup
+    out = [_clean_final_punctuation(c) for c in out]
+    return out
+
+
+def _clean_final_punctuation(fragment: str) -> str:
+    """Ensure only ONE terminal punctuation mark sits at the end."""
+    return re.sub(r'[.!?]+$', '.', fragment) if fragment[-1].isalnum() else fragment
+
+
+def segment_script(text: str, max_words: int = MAX_WORDS) -> List[str]:
     segments = []
-    for sentence in sentences:
-        words = sentence.split()
-        if len(words) > max_words:
-            # Split the sentence into chunks of max_words.
-            sentence_segments = [
-                " ".join(words[i:i+max_words]) for i in range(0, len(words), max_words)
-            ]
-            # For all segments except the last, ensure they end with a terminal punctuation.
-            for seg in sentence_segments[:-1]:
-                if seg[-1] not in ".!?":
-                    seg += "."
-                segments.append(seg)
-            # Append the last segment as is (it may already have terminal punctuation).
-            segments.append(sentence_segments[-1])
+    for sent in _split_sentences(text):
+        if len(sent.split()) > max_words:
+            segments.extend(_yield_chunks(sent))
         else:
-            segments.append(sentence)
-    logging.info(f"Script segmented into {len(segments)} segments.")
+            segments.append(_clean_final_punctuation(sent))
+    logging.info("Script segmented into %d segments", len(segments))
     return segments

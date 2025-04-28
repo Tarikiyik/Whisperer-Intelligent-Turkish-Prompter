@@ -12,6 +12,7 @@
     "@deepgram/sdk": "^3.12.1",
     "cross-fetch": "^4.1.0",
     "dotenv": "^16.5.0",
+    "mammoth": "^1.9.0",
     "next": "15.3.0",
     "react": "^19.0.0",
     "react-dom": "^19.0.0"

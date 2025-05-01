@@ -1,6 +1,5 @@
 """
 tts_service.py – Google Cloud bidirectional streaming TTS helper
-Now logs “TTS feed paused. Waiting…” only once per pause cycle.
 """
 
 import os, logging, itertools, time
@@ -21,7 +20,7 @@ class TurkishTTS:
     # ─── external controls ────────────────────────────────────────────────────
     def pause_feeding(self):
         self.pause_feed = True
-        self._pause_noticed = False   # reset so we log once
+        self._pause_noticed = False   # log once
         logging.info("TTS feeding paused.")
 
     def resume_feeding(self):
@@ -31,8 +30,7 @@ class TurkishTTS:
     # ─── one-shot synthesis (unchanged) ───────────────────────────────────────
     def synthesize(self, text, output_file=None, speaking_rate=1.0,
                    effects_profile=["headphone-class-device"], ssml=False):
-        # (same body as before) …
-        pass  # omit for brevity – your existing implementation is fine
+        pass
 
     # ─── streaming synthesis ─────────────────────────────────────────────────
     def stream_synthesize(self, text, speaking_rate=1.2,
@@ -53,7 +51,7 @@ class TurkishTTS:
                     logging.info("TTS feed paused. Waiting…")
                     self._pause_noticed = True
                 time.sleep(0.1)
-            self._pause_noticed = False  # we’re live again
+            self._pause_noticed = False
 
             # stream current segment ------------------------------------------
             seg_text = segments[idx]

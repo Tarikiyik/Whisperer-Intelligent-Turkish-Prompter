@@ -1,4 +1,4 @@
-# text_segmentation.py  ✨ drop-in replacement
+# text_segmentation.py
 import re
 import logging
 from typing import List
@@ -47,7 +47,7 @@ def _yield_chunks(sentence: str) -> List[str]:
 
 
 def _clean_final_punctuation(fragment: str) -> str:
-    """Ensure only ONE terminal punctuation mark sits at the end."""
+    """Ensure only ONE terminal punctuation mark at the end."""
     return re.sub(r'[.!?]+$', '.', fragment) if fragment[-1].isalnum() else fragment
 
 

@@ -50,7 +50,7 @@ class SpeechMonitor:
         return difflib.SequenceMatcher(None, gold, recent.lower()).ratio()
 
     def _log_debug(self, recent: str, score: float):
-        logging.info("── DBG ─────────────────────────────────────────────")
+        logging.info("── DBG ───────────────────────────────────────────")
         logging.info("EXPECTED [%02d]: %s", self.idx, self.segments[self.idx])
         logging.info("HEARD              %s", recent)
         logging.info("SIMILARITY         %.2f  (thr %.2f)", score, self.thres)

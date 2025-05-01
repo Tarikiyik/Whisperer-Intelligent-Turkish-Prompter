@@ -3,29 +3,24 @@
 
 import { useState, useEffect, useRef } from 'react';
 import useDeepgramRaw from '@/hooks/useDeepgramRaw';
-import useBackend     from '@/hooks/useBackend';
-import { MicVAD }     from '@ricky0123/vad-web';
+import useBackend from '@/hooks/useBackend';
+import useVAD from '@/hooks/useVAD';
 import { segmentScript, sentenceBuckets } from '@/utils/segment_util';
 
 export default function Prompter() {
   /* ───── core state ───────────────────────────────────── */
-  const [script,   setScript]   = useState('');
+  const [script, setScript] = useState('');
   const [segments, setSegments] = useState<string[]>([]);
-  const [buckets,  setBuckets]  = useState<number[][]>([]);
-  const [lines,    setLines]    = useState<string[]>([]);
+  const [buckets, setBuckets] = useState<number[][]>([]);
+  const [lines, setLines] = useState<string[]>([]);
 
-  const [ready,    setReady]    = useState(false);
-  const [started,  setStarted]  = useState(false);
-  const [segIdx,   setSegIdx]   = useState(0);
-  const [paused,   setPaused]   = useState(false);
-
-  /* ───── refs / timers for VAD FSM ────────────────────── */
-  const speakingRef   = useRef(false);
-  const silenceT = useRef<NodeJS.Timeout | undefined>(undefined);
-  const longT  = useRef<NodeJS.Timeout | undefined>(undefined);
+  const [ready, setReady] = useState(false);
+  const [started, setStarted] = useState(false);
+  const [segIdx, setSegIdx] = useState(0);
+  const [paused, setPaused] = useState(false);
 
   /* scroll refs */
-  const scriptRef     = useRef<HTMLDivElement>(null);
+  const scriptRef = useRef<HTMLDivElement>(null);
   const transcriptRef = useRef<HTMLDivElement>(null);
 
   /* ───── load script ──────────────────────────────────── */
@@ -45,8 +40,8 @@ export default function Prompter() {
     script,
     ({ event, index }) => {
       if (event === 'highlight') setSegIdx(index!);
-      if (event === 'pause')     setPaused(true);
-      if (event === 'resume')    setPaused(false);
+      if (event === 'pause') setPaused(true);
+      if (event === 'resume') setPaused(false);
     }
   );
 
@@ -57,53 +52,8 @@ export default function Prompter() {
     sendTranscript
   );
 
-  /* ───── MicVAD (single instance) ─────────────────────── */
-  useEffect(() => {
-    if (!started) return;
-
-    const SHORT_MS = 500;
-    const LONG_MS  = 1800;
-
-    let cancelled = false;
-    let vad: MicVAD | null = null;
-
-    (async () => {
-      vad = await MicVAD.new({
-        onSpeechStart: () => {
-          console.log('[VAD] Speech start');
-          speakingRef.current = true;
-          clearTimeout(silenceT.current);
-          clearTimeout(longT.current);
-        },
-        
-        onSpeechEnd: () => {
-          console.log('[VAD] Speech end');
-          clearTimeout(silenceT.current);
-          silenceT.current = setTimeout(() => {
-            speakingRef.current = false;        
-            sendVAD('silence_start', 'short');
-          }, SHORT_MS);
-
-          longT.current = setTimeout(() => {
-            if (!speakingRef.current) {
-              console.log('[VAD] Long pause');
-              sendVAD('silence_start', 'long');
-            }
-          }, LONG_MS);
-        },
-      });
-      
-      if (cancelled) { vad.pause(); return; }
-      vad.start();
-    })();
-
-    return () => {
-      cancelled = true;
-      vad?.pause();
-      clearTimeout(silenceT.current);
-      clearTimeout(longT.current);
-    };
-  }, [started, sendVAD]);
+  /* ───── VAD hook ─────────────────────────── */
+  useVAD(started, sendVAD);
 
   /* ───── scrolling helpers ────────────────────────────── */
   useEffect(() => {

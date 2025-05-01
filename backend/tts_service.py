@@ -31,7 +31,6 @@ class TurkishTTS:
     # ─── one-shot synthesis (unchanged) ───────────────────────────────────────
     def synthesize(self, text, output_file=None, speaking_rate=1.0,
                    effects_profile=["headphone-class-device"], ssml=False):
-        # (same body as before) …
         pass  # omit for brevity – your existing implementation is fine
 
     # ─── streaming synthesis ─────────────────────────────────────────────────

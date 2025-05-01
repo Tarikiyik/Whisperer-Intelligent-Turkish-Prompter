@@ -28,7 +28,7 @@ export default function Prompter() {
   const scriptRef     = useRef<HTMLDivElement>(null);
   const transcriptRef = useRef<HTMLDivElement>(null);
 
-  /* ───── load script from sessionStorage ──────────────── */
+  /* ───── load script ──────────────────────────────────── */
   useEffect(() => {
     const txt = sessionStorage.getItem('scriptContent') ?? '';
     setScript(txt);
@@ -65,37 +65,41 @@ export default function Prompter() {
     const LONG_MS  = 1800;
 
     let cancelled = false;
+    let vad: MicVAD | null = null;
 
     (async () => {
-      const vad = await MicVAD.new({
+      vad = await MicVAD.new({
         onSpeechStart: () => {
-          console.log('speech start');
+          console.log('[VAD] Speech start');
           speakingRef.current = true;
           clearTimeout(silenceT.current);
           clearTimeout(longT.current);
-          /* VAD only mutes, never resumes; no need to send speech_start */
         },
+        
         onSpeechEnd: () => {
-          console.log('speech end');
+          console.log('[VAD] Speech end');
           clearTimeout(silenceT.current);
           silenceT.current = setTimeout(() => {
-            speakingRef.current = false;          // ← crucial fix
+            speakingRef.current = false;        
             sendVAD('silence_start', 'short');
           }, SHORT_MS);
 
           longT.current = setTimeout(() => {
             if (!speakingRef.current) {
+              console.log('[VAD] Long pause');
               sendVAD('silence_start', 'long');
             }
           }, LONG_MS);
         },
       });
+      
       if (cancelled) { vad.pause(); return; }
       vad.start();
     })();
 
     return () => {
       cancelled = true;
+      vad?.pause();
       clearTimeout(silenceT.current);
       clearTimeout(longT.current);
     };

@@ -12,6 +12,17 @@ export default function useDeepgramRaw(
   enabled: boolean,
   backendSend?: (t: string) => void
 ) {
+  // Use refs to store the latest callback functions without triggering effect reruns
+  const onFinalRef = useRef(onFinal);
+  const backendSendRef = useRef(backendSend);
+  
+  // Update refs when callbacks change
+  useEffect(() => {
+    onFinalRef.current = onFinal;
+    backendSendRef.current = backendSend;
+  }, [onFinal, backendSend]);
+
+  // Main effect that sets up the Deepgram connection
   useEffect(() => {
     if (!enabled) return;
 
@@ -95,8 +106,8 @@ export default function useDeepgramRaw(
             if (text && text !== lastTextRef) {
               console.log("✅ Final transcript:", text);
               lastTextRef = text;
-              onFinal(text);
-              backendSend?.(text);
+              onFinalRef.current(text);
+              backendSendRef.current?.(text);
             }
           }
         });
@@ -123,5 +134,5 @@ export default function useDeepgramRaw(
       if (audioCtx) audioCtx.close();
       if (stream) stream.getTracks().forEach(track => track.stop());
     };
-  }, [onFinal, enabled, backendSend]);
+  }, [enabled]);
 }

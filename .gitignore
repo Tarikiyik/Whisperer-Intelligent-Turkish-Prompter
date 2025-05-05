@@ -70,3 +70,5 @@ env/
 ENV/
 python_env/
 __venv__/
+
+/turkish_nlp_model

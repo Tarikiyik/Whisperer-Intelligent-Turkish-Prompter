@@ -1,7 +1,6 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { MicVAD } from '@ricky0123/vad-web';
 
-// Use this to track the VAD instance globally across hot reloads
 let globalVAD: MicVAD | null = null;
 let globalVADStream: MediaStream | null = null;
 
@@ -9,7 +8,11 @@ export default function useVAD(
   started: boolean,
   sendVAD: (status: 'speech_start' | 'silence_start', dur?: 'short' | 'long') => void
 ) {
-  // Use refs to maintain state across renders
+  const [isSpeaking, setIsSpeaking] = useState(false);
+  const [silenceType, setSilenceType] = useState<null | 'short' | 'long'>(null);
+  const [lastEvent, setLastEvent] = useState<'speech_start' | 'silence_short' | 'silence_long' | null>(null);
+
+  // Userefs to maintain state across renders
   const speakingRef = useRef(false);
   const silenceT = useRef<NodeJS.Timeout | undefined>(undefined);
   const longT = useRef<NodeJS.Timeout | undefined>(undefined);
@@ -25,7 +28,6 @@ export default function useVAD(
     
     // Use global instance if available
     if (globalVAD) {
-      console.log("[VAD] Using existing global VAD instance");
       vadRef.current = globalVAD;
       streamRef.current = globalVADStream;
       vadInitializedRef.current = true;
@@ -34,7 +36,7 @@ export default function useVAD(
 
     // Timing constants
     const SHORT_MS = 500;
-    const LONG_MS = 1800;
+    const LONG_MS = 2500;
     
     // Track if this effect instance is cancelled
     let isCancelled = false;
@@ -46,9 +48,7 @@ export default function useVAD(
         return;
       }
       
-      try {
-        console.log("[VAD] Initializing with dedicated stream");
-        
+      try {        
         // Create a dedicated stream for VAD
         const vadStream = await navigator.mediaDevices.getUserMedia({
           audio: {
@@ -77,6 +77,9 @@ export default function useVAD(
           onSpeechStart: () => {
             console.log('[VAD] Speech start');
             speakingRef.current = true;
+            setIsSpeaking(true);           
+            setSilenceType(null);          
+            setLastEvent('speech_start');
             clearTimeout(silenceT.current);
             clearTimeout(longT.current);
           },
@@ -85,13 +88,18 @@ export default function useVAD(
             console.log('[VAD] Speech end');
             clearTimeout(silenceT.current);
             silenceT.current = setTimeout(() => {
-              speakingRef.current = false;        
+              speakingRef.current = false;
+              setIsSpeaking(false);
+              setSilenceType('short');
+              setLastEvent('silence_short');
               sendVAD('silence_start', 'short');
             }, SHORT_MS);
 
             longT.current = setTimeout(() => {
               if (!speakingRef.current) {
                 console.log('[VAD] Long pause');
+                setSilenceType('long');
+                setLastEvent('silence_long');
                 sendVAD('silence_start', 'long');
               }
             }, LONG_MS);
@@ -100,7 +108,6 @@ export default function useVAD(
         
         // Check if cancelled during async initialization
         if (isCancelled) { 
-          console.log("[VAD] Initialization was cancelled, cleaning up");
           vad.pause();
           vadStream.getTracks().forEach(track => track.stop());
           return; 
@@ -161,5 +168,9 @@ export default function useVAD(
     };
   }, [started, sendVAD]);
 
-  return { isSpeaking: speakingRef.current };
+  return { 
+    isSpeaking,
+    silenceType,
+    lastEvent
+  };
 }

@@ -24,7 +24,7 @@ class SpeechMonitor:
         expected_script: str,
         threshold: float = 3.0,
         similarity_threshold: float = 0.70,
-        model_path: str = "your-path-goes-here"  # <- path for the trained model
+        model_path: str = "../labse-stsb-turkish-cls-pooled"  # path to the trained nlp model
     ):
         self.file = transcript_file
         self.idle = threshold

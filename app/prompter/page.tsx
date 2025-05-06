@@ -5,6 +5,7 @@ import { useState, useEffect, useRef } from 'react';
 import useDeepgramRaw from '@/hooks/useDeepgramRaw';
 import useBackend from '@/hooks/useBackend';
 import useVAD from '@/hooks/useVAD';
+import { useAppVAD }   from '@/contexts/VADContext';
 import { segmentScript, sentenceBuckets } from '@/utils/segment_util';
 
 export default function Prompter() {
@@ -13,7 +14,6 @@ export default function Prompter() {
   const [segments, setSegments] = useState<string[]>([]);
   const [buckets, setBuckets] = useState<number[][]>([]);
   const [lines, setLines] = useState<string[]>([]);
-
   const [ready, setReady] = useState(false);
   const [started, setStarted] = useState(false);
   const [segIdx, setSegIdx] = useState(0);
@@ -45,15 +45,17 @@ export default function Prompter() {
     }
   );
 
+  /* ───── VAD (auto‑starts mic & exposes stream) ────────── */
+  const { lastEvent, silenceType } = useVAD(started, sendVAD);
+  const { audioStream } = useAppVAD(); 
+
   /* ───── Deepgram STT hook ────────────────────────────── */
   useDeepgramRaw(
     (txt) => setLines((prev) => [...prev, txt]),
     started,
-    sendTranscript
+    sendTranscript,
+    audioStream  
   );
-
-  /* ───── VAD hook ─────────────────────────── */
-  useVAD(started, sendVAD);
 
   /* ───── scrolling helpers ────────────────────────────── */
   useEffect(() => {
@@ -67,6 +69,33 @@ export default function Prompter() {
   useEffect(() => {
     transcriptRef.current?.lastElementChild?.scrollIntoView({ behavior: 'smooth' });
   }, [lines]);
+
+  useEffect(() => {
+    if (!started) return;
+    
+    // Get references to elements
+    const transcriptEl = transcriptRef.current;
+    const scriptEl = scriptRef.current;
+    
+    if (!transcriptEl || !scriptEl) return;
+    
+    // For speech start - smooth pulse effect
+    if (lastEvent === 'speech_start') {
+      transcriptEl.classList.add('highlight-speech');
+      setTimeout(() => {
+        transcriptEl.classList.remove('highlight-speech');
+      }, 1000); // Adjust the duration for the pulse effect
+    }
+    
+    // For long silence - persistent warning
+    if (silenceType === 'long') {
+      // Add warning highlight
+      scriptEl.classList.add('warn-silence');
+    } else {
+      // Remove warning when no longer in long silence
+      scriptEl.classList.remove('warn-silence');
+    }
+  }, [lastEvent, silenceType, started]);
 
   /* ───── UI ───────────────────────────────────────────── */
   return (
@@ -102,12 +131,6 @@ export default function Prompter() {
                 ))
               : <p className="text-gray-500 italic">Transcriptions will appear here…</p>}
           </div>
-
-          {paused && (
-            <p className="text-red-400 font-semibold mt-3">
-              ⏸ Paused — off script
-            </p>
-          )}
         </div>
       )}
 

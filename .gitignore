@@ -70,3 +70,6 @@ env/
 ENV/
 python_env/
 __venv__/
+
+/turkish_nlp_model
+/labse-stsb-turkish-cls-pooled

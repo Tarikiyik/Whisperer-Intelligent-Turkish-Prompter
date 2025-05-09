@@ -20,7 +20,8 @@ class SpeechMonitor:
         transcript_file: str,
         expected_script: str,
         similarity_threshold: float = 0.70,
-        model_path: str = "../labse-stsb-turkish-cls-pooled"  # path to the trained NLP model
+        # Path to the fine-tuned NLP model
+        model_path: str = "../turkish_nlp_model"
     ):
         self.file = transcript_file
         self.thres = similarity_threshold

@@ -5,11 +5,12 @@ import { useState, useEffect, useRef } from 'react';
 import useDeepgramRaw from '@/hooks/useDeepgramRaw';
 import useBackend from '@/hooks/useBackend';
 import useVAD from '@/hooks/useVAD';
-import { useAppVAD }   from '@/contexts/VADContext';
+import { useAppVAD } from '@/contexts/VADContext';
 import { usePromptPlayer } from '@/hooks/usePromptPlayer';
 import { segmentScript, sentenceBuckets } from '@/utils/segment_util';
+import dynamic from 'next/dynamic';
 
-export default function Prompter() {
+const Prompter = () => {
   /* ───── core state ───────────────────────────────────── */
   const [script, setScript] = useState('');
   const [segments, setSegments] = useState<string[]>([]);
@@ -23,16 +24,35 @@ export default function Prompter() {
   const scriptRef = useRef<HTMLDivElement>(null);
   const transcriptRef = useRef<HTMLDivElement>(null);
 
+  /* Get access to VAD context */
+  const { updateVadSettings } = useAppVAD();
+
   /* ───── load script ──────────────────────────────────── */
   useEffect(() => {
+    // Only run in browser
+    if (typeof window === 'undefined') return;
+    
     const txt = sessionStorage.getItem('scriptContent') ?? '';
     setScript(txt);
+
+    /* Load settings*/
+    const settingsJson = sessionStorage.getItem('settings');
+    if (settingsJson) {
+      try {
+        const settings = JSON.parse(settingsJson);
+        if (settings.vad_long_ms) {
+          updateVadSettings(settings.vad_long_ms);
+        }
+      } catch (err) {
+        console.error("Error parsing settings:", err);
+      }
+    }
 
     const segs = segmentScript(txt);
     setSegments(segs);
     setBuckets(sentenceBuckets(segs));
     setReady(true);
-  }, []);
+  }, [updateVadSettings]);
 
   // 1) websocket bridge—only transcript & highlight events
   const { sendTranscript } = useBackend(
@@ -59,6 +79,13 @@ export default function Prompter() {
 
   // 4) Prompt hook—play TTS audio
   const { playPrompt, stopPrompt } = usePromptPlayer();
+
+  // Play first segment when "Start Prompter" is clicked
+  useEffect(() => {
+    if (started) {
+      playPrompt(0);
+    }
+  }, [started]);
 
   // 5) On long silence, play segIdx+1 prompt
   useEffect(() => {
@@ -108,7 +135,6 @@ export default function Prompter() {
     
     // For long silence - persistent warning
     if (silenceType === 'long') {
-      // Add warning highlight
       scriptEl.classList.add('warn-silence');
     } else {
       // Remove warning when no longer in long silence
@@ -176,4 +202,9 @@ export default function Prompter() {
       )}
     </div>
   );
-}
+};
+
+// Use dynamic import to skip SSR
+export default dynamic(() => Promise.resolve(Prompter), {
+  ssr: false
+});

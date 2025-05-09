@@ -49,7 +49,6 @@ class TurkishTTS:
         audio_config = texttospeech.AudioConfig(
             audio_encoding=texttospeech.AudioEncoding.LINEAR16,
             speaking_rate=settings.tts_speaking_rate,
-            pitch=settings.tts_pitch,
             volume_gain_db=settings.tts_volume_gain_db,
             effects_profile_id=["headphone-class-device"],
         )

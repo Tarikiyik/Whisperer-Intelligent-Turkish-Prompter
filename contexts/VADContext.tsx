@@ -19,13 +19,14 @@ interface VADContextShape {
     // controls
     start : () => Promise<void>;
     stop  : () => void;
+    updateVadSettings: (longMs: number) => void;
   }
 
 const VADContext = createContext<VADContextShape | null>(null);
 
 // Timing constants
-const SHORT_MS =  500;
-const LONG_MS  = 2500;
+const SHORT_MS = 500;
+const DEFAULT_LONG_MS = 1500;
 
 export function VADProvider({ children }: { children: ReactNode }) {
   // reactive state exposed to consumers
@@ -33,6 +34,7 @@ export function VADProvider({ children }: { children: ReactNode }) {
   const [silenceType, setSilenceType] = useState<Silence>(null);
   const [lastEvent,   setLastEvent  ] = useState<LastEvt>(null);
   const [audioStream, setAudioStream] = useState<MediaStream|null>(null);
+  const [longMs, setLongMs] = useState(DEFAULT_LONG_MS);
 
   // mutable refs that survive re‑renders 
   const vadRef       = useRef<MicVAD | null>(null);
@@ -40,6 +42,14 @@ export function VADProvider({ children }: { children: ReactNode }) {
   const speakingRef  = useRef(false);
   const silenceT = useRef<NodeJS.Timeout | undefined>(undefined);
   const longT = useRef<NodeJS.Timeout | undefined>(undefined);
+  const longMsRef = useRef(DEFAULT_LONG_MS);
+
+  // Update function for VAD settings
+  const updateVadSettings = useCallback((newLongMs: number) => {
+    setLongMs(newLongMs);
+    longMsRef.current = newLongMs;
+    console.log(`[VAD] Updated long silence to ${newLongMs}ms`);
+  }, []);
 
   // create & start VAD only once
   const start = useCallback(async () => {
@@ -97,7 +107,7 @@ export function VADProvider({ children }: { children: ReactNode }) {
             setLastEvent('silence_long');
             console.log('[VAD] silence_long');
           }
-        }, LONG_MS);
+        }, longMsRef.current); // Use the ref value for dynamic updates
       }
     });
 
@@ -126,14 +136,14 @@ export function VADProvider({ children }: { children: ReactNode }) {
     console.log('[VAD] stopped & mic released');
   }, []);
 
-  // provider cleanup (rare)
+  // provider cleanup (rare)
   useEffect(() => stop, [stop]);
 
   // context value 
   const ctx: VADContextShape = {
     isSpeaking, silenceType, lastEvent,
     audioStream,
-    start, stop,
+    start, stop, updateVadSettings,
   };
   return <VADContext.Provider value={ctx}>{children}</VADContext.Provider>;
 }

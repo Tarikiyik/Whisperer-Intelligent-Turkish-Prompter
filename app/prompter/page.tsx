@@ -6,6 +6,7 @@ import useDeepgramRaw from '@/hooks/useDeepgramRaw';
 import useBackend from '@/hooks/useBackend';
 import useVAD from '@/hooks/useVAD';
 import { useAppVAD }   from '@/contexts/VADContext';
+import { usePromptPlayer } from '@/hooks/usePromptPlayer';
 import { segmentScript, sentenceBuckets } from '@/utils/segment_util';
 
 export default function Prompter() {
@@ -17,7 +18,6 @@ export default function Prompter() {
   const [ready, setReady] = useState(false);
   const [started, setStarted] = useState(false);
   const [segIdx, setSegIdx] = useState(0);
-  const [paused, setPaused] = useState(false);
 
   /* scroll refs */
   const scriptRef = useRef<HTMLDivElement>(null);
@@ -34,22 +34,22 @@ export default function Prompter() {
     setReady(true);
   }, []);
 
-  /* ───── WebSocket bridge to backend ──────────────────── */
-  const { sendTranscript, sendVAD } = useBackend(
+  // 1) websocket bridge—only transcript & highlight events
+  const { sendTranscript } = useBackend(
     started && ready,
     script,
     ({ event, index }) => {
-      if (event === 'highlight') setSegIdx(index!);
-      if (event === 'pause') setPaused(true);
-      if (event === 'resume') setPaused(false);
+      if (event === 'highlight') {
+        setSegIdx(index!);
+      }
     }
   );
 
-  /* ───── VAD (auto‑starts mic & exposes stream) ────────── */
-  const { lastEvent, silenceType } = useVAD(started, sendVAD);
+  // 2) VAD hook—no sendVAD anymore
+  const { lastEvent, silenceType } = useVAD(started);
   const { audioStream } = useAppVAD(); 
 
-  /* ───── Deepgram STT hook ────────────────────────────── */
+  // 3) STT → SpeechMonitor hook
   useDeepgramRaw(
     (txt) => setLines((prev) => [...prev, txt]),
     started,
@@ -57,6 +57,25 @@ export default function Prompter() {
     audioStream  
   );
 
+  // 4) Prompt hook—play TTS audio
+  const { playPrompt, stopPrompt } = usePromptPlayer();
+
+  // 5) On long silence, play segIdx+1 prompt
+  useEffect(() => {
+    if (started && lastEvent === 'silence_long') {
+      if (segIdx < segments.length) {
+        playPrompt(segIdx);
+      }
+    }
+  }, [lastEvent, started, segIdx, segments.length, playPrompt]);
+
+  /* ───── interrupt if user speaks ────────────────────── */
+  useEffect(() => {
+    if (started && lastEvent === 'speech_start') {
+      stopPrompt();
+    }
+  }, [lastEvent, started, stopPrompt]);
+  
   /* ───── scrolling helpers ────────────────────────────── */
   useEffect(() => {
     if (!scriptRef.current) return;

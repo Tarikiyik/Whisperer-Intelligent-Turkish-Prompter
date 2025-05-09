@@ -1,13 +1,10 @@
-# speech_monitor.py
 """
 Monitors live transcripts, compares them against script **segments**
-(produced by text_segmentation.segment_script) and fires pause/resume /
-highlight callbacks.  Debug output prints the expected segment,
-what was actually heard, and the similarity ratio.
+(produced by text_segmentation.segment_script) and fires highlight callbacks.
+Debug output prints the expected segment, what was actually heard, and the similarity ratio.
 """
 
 import os, time, asyncio, logging, re
-from typing import Optional
 from text_segmentation import segment_script
 from sentence_transformers import SentenceTransformer, util
 
@@ -22,38 +19,34 @@ class SpeechMonitor:
         self,
         transcript_file: str,
         expected_script: str,
-        threshold: float = 3.0,
         similarity_threshold: float = 0.70,
-        model_path: str = "../labse-stsb-turkish-cls-pooled"  # path to the trained nlp model
+        model_path: str = "../labse-stsb-turkish-cls-pooled"  # path to the trained NLP model
     ):
         self.file = transcript_file
-        self.idle = threshold
         self.thres = similarity_threshold
 
+        # Use the same segments from text_segmentation
         self.segments = segment_script(expected_script)
         self.idx = 0
         self.last_tx = ""
-        self.paused = False
 
-        self._on_pause = None
-        self._on_resume = None
+        # Only the update callback remains
         self._on_update = None
 
-        # Load the NLP model
+        # Load the NLP model once
         self.model = SentenceTransformer(model_path)
         logging.info("SpeechMonitor ▶ %d segments ready", len(self.segments))
         logging.info("Model loaded from: %s", model_path)
 
-    def set_pause_callback(self, fn): self._on_pause = fn
-    def set_resume_callback(self, fn): self._on_resume = fn
-    def set_sentence_update_callback(self, fn): self._on_update = fn
+    def set_sentence_update_callback(self, fn):
+        """Register a callback fn(idx: int) to fire when a segment is spoken."""
+        self._on_update = fn
 
     def _similarity(self, recent: str) -> float:
-        """Using NLP model to score similarity between recent text and expected segment."""
+        """Compute cosine similarity between the current segment and recent text."""
         gold = self.segments[self.idx]
         embeddings = self.model.encode([gold, recent], convert_to_tensor=True)
         score = util.cos_sim(embeddings[0], embeddings[1]).item()
-
         self._log_debug(recent, score)
         return score
 
@@ -65,9 +58,11 @@ class SpeechMonitor:
         logging.info("──────────────────────────────────────────────────")
 
     async def run(self):
+        # Track last modification time
         mtime = os.path.getmtime(self.file) if os.path.exists(self.file) else time.time()
+
         while True:
-            await asyncio.sleep(0.5)
+            await asyncio.sleep(0.2)
 
             if not os.path.exists(self.file):
                 continue
@@ -75,33 +70,25 @@ class SpeechMonitor:
             new_mtime = os.path.getmtime(self.file)
             if new_mtime > mtime:
                 mtime = new_mtime
-            idle = time.time() - mtime
 
+            # Asynchronously read the transcript file
             with open(self.file, "r", encoding="utf-8") as fh:
                 txt = fh.read()
 
+            # If nothing new, skip
             if txt == self.last_tx:
-                if idle > self.idle and not self.paused:
-                    self._on_pause and self._on_pause()
-                    self.paused = True
                 continue
-            self.last_tx = txt
 
+            self.last_tx = txt
             recent_sents = _split_sentences(txt)
             if not recent_sents:
                 continue
-            recent = recent_sents[-1]
 
+            recent = recent_sents[-1]
             score = self._similarity(recent)
 
-            if score >= self.thres:
-                if self.paused:
-                    self._on_resume and self._on_resume()
-                    self.paused = False
-                if self.idx < len(self.segments) - 1:
-                    self.idx += 1
-                    self._on_update and self._on_update(self.idx)
-            else:
-                if not self.paused:
-                    self._on_pause and self._on_pause()
-                    self.paused = True
+            # Only advance when similarity meets threshold
+            if score >= self.thres and self.idx < len(self.segments) - 1:
+                self.idx += 1
+                if self._on_update:
+                    self._on_update(self.idx)

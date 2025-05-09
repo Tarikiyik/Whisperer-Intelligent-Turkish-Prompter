@@ -8,7 +8,7 @@ logging.basicConfig(level=logging.INFO)
 # ── tunable parameters (change here only) ──────────────────────────────
 MAX_WORDS = 10      # hard cap size of a sub-segment
 MIN_WORDS = 4       # if the *last* fragment is shorter, merge it back
-WINDOW     = 3      # how far we can look back for a nicer split point
+WINDOW    = 3      # how far we can look back for a nicer split point
 # ───────────────────────────────────────────────────────────────────────
 
 # negative look-behind avoids “20.”,  “7.”  etc. being treated as EOS

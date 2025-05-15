@@ -25,7 +25,7 @@ interface VADContextShape {
 const VADContext = createContext<VADContextShape | null>(null);
 
 // Timing constants
-const SHORT_MS = 500;
+const SHORT_MS = 200;
 const DEFAULT_LONG_MS = 1500;
 
 export function VADProvider({ children }: { children: ReactNode }) {

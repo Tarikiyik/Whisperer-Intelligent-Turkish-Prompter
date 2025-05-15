@@ -21,14 +21,16 @@ class SpeechMonitor:
         expected_script: str,
         similarity_threshold: float = 0.70,
         # Path to the fine-tuned NLP model
-        model_path: str = "../turkish_nlp_model"
+        model_path: str = "../turkish_nlp_model",
+        lookahead_segments: int = 2 # Number of future segments to check
     ):
         self.file = transcript_file
         self.thres = similarity_threshold
+        self.lookahead_segments = lookahead_segments
 
         # Use the same segments from text_segmentation
         self.segments = segment_script(expected_script)
-        self.idx = 0
+        self.current_expected_idx = 0
         self.last_tx = ""
 
         # Only the update callback remains
@@ -43,19 +45,18 @@ class SpeechMonitor:
         """Register a callback fn(idx: int) to fire when a segment is spoken."""
         self._on_update = fn
 
-    def _similarity(self, recent: str) -> float:
-        """Compute cosine similarity between the current segment and recent text."""
-        gold = self.segments[self.idx]
-        embeddings = self.model.encode([gold, recent], convert_to_tensor=True)
+    def _similarity(self, recent_text: str, target_segment_text: str, target_segment_idx_for_logging: int) -> float:
+        """Compute cosine similarity between a target segment and recent text."""
+        embeddings = self.model.encode([target_segment_text, recent_text], convert_to_tensor=True)
         score = util.cos_sim(embeddings[0], embeddings[1]).item()
-        self._log_debug(recent, score)
+        self._log_debug(recent_text, score, target_segment_text, target_segment_idx_for_logging)
         return score
 
-    def _log_debug(self, recent: str, score: float):
+    def _log_debug(self, recent_text: str, score: float, expected_segment_text: str, expected_segment_idx: int):
         logging.info("── NLP SIMILARITY DEBUG ───────────────────────────")
-        logging.info("EXPECTED [%02d]: %s", self.idx, self.segments[self.idx])
-        logging.info("HEARD              %s", recent)
-        logging.info("COSINE SIMILARITY  %.3f  (thr %.2f)", score, self.thres)
+        logging.info("TRYING MATCH FOR [%02d]: %s", expected_segment_idx, expected_segment_text)
+        logging.info("HEARD                 %s", recent_text)
+        logging.info("COSINE SIMILARITY     %.3f  (thr %.2f)", score, self.thres)
         logging.info("──────────────────────────────────────────────────")
 
     async def run(self):
@@ -85,11 +86,34 @@ class SpeechMonitor:
             if not recent_sents:
                 continue
 
-            recent = recent_sents[-1]
-            score = self._similarity(recent)
+            recent_spoken_text = recent_sents[-1]
+            
+            # Determine the range of segments to check (current + lookahead)
+            # Start from the furthest lookahead and work backwards
+            # e.g. if lookahead is 2, check: current+2, current+1, current
+            matched_in_lookahead = False
+            for lookahead_offset in range(self.lookahead_segments, -1, -1):
+                prospective_match_idx = self.current_expected_idx + lookahead_offset
+                
+                # Ensure prospective_match_idx is a valid segment index
+                if 0 <= prospective_match_idx < len(self.segments):
+                    target_segment_text = self.segments[prospective_match_idx]
+                    score = self._similarity(recent_spoken_text, target_segment_text, prospective_match_idx)
 
-            # Only advance when similarity meets threshold
-            if score >= self.thres and self.idx < len(self.segments) - 1:
-                self.idx += 1
-                if self._on_update:
-                    self._on_update(self.idx)
+                    if score >= self.thres:
+                        # Matched segment `prospective_match_idx`.
+                        # The next expected segment will be `prospective_match_idx + 1`.
+                        new_expected_idx = prospective_match_idx + 1
+                        
+                        # Only update if it's a forward move and within bounds
+                        if new_expected_idx > self.current_expected_idx and new_expected_idx < len(self.segments):
+                            logging.info(f"MATCHED segment [{prospective_match_idx}] (jumped {lookahead_offset}). New expected index: {new_expected_idx}")
+                            self.current_expected_idx = new_expected_idx
+                            if self._on_update:
+                                self._on_update(self.current_expected_idx)
+                            matched_in_lookahead = True
+                            break # Exit lookahead loop once a match is found and processed
+                        elif new_expected_idx == self.current_expected_idx: # Matched current, no change needed other than logging
+                            logging.info(f"MATCHED current segment [{prospective_match_idx}]. No index change.")
+                            matched_in_lookahead = True # Mark as matched to avoid non-match logic below
+                            break

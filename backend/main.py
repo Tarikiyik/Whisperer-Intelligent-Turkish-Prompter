@@ -3,9 +3,10 @@
 import os
 import io
 import asyncio
-from fastapi import FastAPI, WebSocket, WebSocketDisconnect, HTTPException, APIRouter
+from fastapi import FastAPI, WebSocket, WebSocketDisconnect, HTTPException, APIRouter, Body
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import StreamingResponse
+from pydantic import BaseModel
 
 from speech_monitor import SpeechMonitor
 from tts_service import TurkishTTS
@@ -30,6 +31,13 @@ app.add_middleware(
 # Global segments list
 segments: list[str] = []
 
+# Settings model for validation
+class SettingsUpdate(BaseModel):
+    tts_voice_name: str
+    tts_speaking_rate: float
+    tts_volume_gain_db: float
+    vad_long_ms: int
+
 # Settings endpoint
 settings_router = APIRouter()
 
@@ -38,11 +46,20 @@ async def get_settings():
     return {
         "tts_voice_name": settings.tts_voice_name,
         "tts_speaking_rate": settings.tts_speaking_rate,
-        "tts_pitch": settings.tts_pitch,
         "tts_volume_gain_db": settings.tts_volume_gain_db,
-        "vad_short_ms": settings.vad_short_ms,
         "vad_long_ms": settings.vad_long_ms,
     }
+
+@settings_router.post("/api/settings")
+async def update_settings(update_data: SettingsUpdate):
+    # Update the settings object with new values
+    settings.tts_voice_name = update_data.tts_voice_name
+    settings.tts_speaking_rate = update_data.tts_speaking_rate
+    settings.tts_volume_gain_db = update_data.tts_volume_gain_db
+    settings.vad_long_ms = update_data.vad_long_ms  
+    # This will update the in-memory settings
+    
+    return {"status": "success", "message": "Settings updated successfully"}
 
 app.include_router(settings_router)
 
@@ -88,7 +105,7 @@ async def bridge(ws: WebSocket):
         )
         mon_task = asyncio.create_task(mon.run())
 
-        # Main receive loop: only transcripts now
+        # Receive loop
         while True:
             msg = await ws.receive_json()
             if msg.get("type") == "transcript":

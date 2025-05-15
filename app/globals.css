@@ -26,26 +26,31 @@
   }
 }
 
+/* Body */
 body {
   background: var(--bg-primary);
   color: var(--text-primary);
   font-family: var(--font-primary);
 }
 
+/* Primary button */
 button.primary {
   background-color: var(--accent-primary);
   color: var(--text-primary);
 }
 
+/* Primary button hover */
 button.primary:hover {
   background-color: var(--accent-hover);
 }
 
+/* Highlight current word */
 .highlight {
   background-color: var(--highlight-current);
   color: black;
 }
 
+/* Highlight speech */
 .highlight-speech {
   animation: speechPulse 1s ease-in-out;
   transition: all 0.3s;
@@ -54,6 +59,7 @@ button.primary:hover {
   border-bottom-right-radius: 4px;
 }
 
+/* Warning for silence */
 .warn-silence {
   box-shadow: 0 0 15px rgba(239, 68, 68, 0.7);
   border-top-left-radius: 8px;
@@ -81,7 +87,43 @@ textarea {
   color: var(--text-primary);
 }
 
+/* No scrollbar */
 .no-scrollbar{
   scrollbar-width: none;
   -ms-overflow-style: none;
+}
+
+/* Modal backdrop with blur effect */
+.modal-backdrop {
+  backdrop-filter: blur(5px);
+  background-color: rgba(0, 0, 0, 0.4);
+  animation: fadeIn 0.2s ease-out;
+}
+
+/* Semi-transparent modal */
+.modal-content {
+  background-color: rgba(30, 41, 59, 0.9);
+  animation: scaleIn 0.3s ease-out;
+  transform-origin: center;
+}
+
+/* Animations */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes scaleIn {
+  from {
+    opacity: 0;
+    transform: scale(0.9);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
 }

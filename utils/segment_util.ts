@@ -54,6 +54,10 @@ export function segmentScript(text: string): string[] {
   return segs;
 }
 
+export function segmentSentences(text: string): string[] {
+  return splitSentences(text).map(cleanFinal);
+}
+
 /** groups segment indices by the sentence they belong to */
 export function sentenceBuckets(segs: string[]): number[][] {
   const buckets: number[][] = [];

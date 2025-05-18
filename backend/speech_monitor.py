@@ -5,7 +5,7 @@ Debug output prints the expected segment, what was actually heard, and the simil
 """
 
 import os, time, asyncio, logging, re
-from text_segmentation import segment_script
+from text_segmentation import segment_script, segment_sentences
 from sentence_transformers import SentenceTransformer, util
 
 logging.basicConfig(level=logging.INFO)
@@ -22,14 +22,19 @@ class SpeechMonitor:
         similarity_threshold: float = 0.70,
         # Path to the fine-tuned NLP model
         model_path: str = "../turkish_nlp_model",
-        lookahead_segments: int = 2 # Number of future segments to check
+        lookahead_segments: int = 2, # Number of future segments to check
+        sentence_mode: bool = False  # Segmentation mode
     ):
         self.file = transcript_file
         self.thres = similarity_threshold
         self.lookahead_segments = lookahead_segments
 
         # Use the same segments from text_segmentation
-        self.segments = segment_script(expected_script)
+        if sentence_mode:
+            self.segments = segment_sentences(expected_script)
+        else:
+            self.segments = segment_script(expected_script)
+
         self.current_expected_idx = 0
         self.last_tx = ""
 

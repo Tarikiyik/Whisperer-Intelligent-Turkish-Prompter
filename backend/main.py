@@ -11,7 +11,7 @@ from pydantic import BaseModel
 from speech_monitor import SpeechMonitor
 from tts_service import TurkishTTS
 from config import settings
-from text_segmentation import segment_script
+from text_segmentation import segment_script, segment_sentences
 
 DATA_DIR   = os.path.join(os.path.dirname(__file__), "data")
 os.makedirs(DATA_DIR, exist_ok=True)
@@ -37,6 +37,7 @@ class SettingsUpdate(BaseModel):
     tts_speaking_rate: float
     tts_volume_gain_db: float
     vad_long_ms: int
+    sentence_mode: bool
 
 # Settings endpoint
 settings_router = APIRouter()
@@ -48,6 +49,7 @@ async def get_settings():
         "tts_speaking_rate": settings.tts_speaking_rate,
         "tts_volume_gain_db": settings.tts_volume_gain_db,
         "vad_long_ms": settings.vad_long_ms,
+        "sentence_mode": settings.sentence_mode,
     }
 
 @settings_router.post("/api/settings")
@@ -57,6 +59,7 @@ async def update_settings(update_data: SettingsUpdate):
     settings.tts_speaking_rate = update_data.tts_speaking_rate
     settings.tts_volume_gain_db = update_data.tts_volume_gain_db
     settings.vad_long_ms = update_data.vad_long_ms  
+    settings.sentence_mode = update_data.sentence_mode
     # This will update the in-memory settings
     
     return {"status": "success", "message": "Settings updated successfully"}
@@ -89,14 +92,19 @@ async def bridge(ws: WebSocket):
 
         script = first["script"]
         open(TRANSCRIPT, "w", encoding="utf-8").close()
+
         global segments
-        segments = segment_script(script)
+        if settings.sentence_mode:
+            segments = segment_sentences(script)
+        else:
+            segments = segment_script(script)
 
         # SpeechMonitor for highlights only
         mon = SpeechMonitor(
             transcript_file=TRANSCRIPT,
             expected_script=script,
-            similarity_threshold=0.70
+            similarity_threshold=0.70,
+            sentence_mode=settings.sentence_mode
         )
         mon.set_sentence_update_callback(
             lambda idx: asyncio.create_task(

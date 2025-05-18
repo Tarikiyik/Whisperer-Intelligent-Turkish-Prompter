@@ -7,7 +7,7 @@ import useBackend from '@/hooks/useBackend';
 import useVAD from '@/hooks/useVAD';
 import { useAppVAD } from '@/contexts/VADContext';
 import { usePromptPlayer } from '@/hooks/usePromptPlayer';
-import { segmentScript, sentenceBuckets } from '@/utils/segment_util';
+import { segmentScript, sentenceBuckets, segmentSentences } from '@/utils/segment_util';
 import dynamic from 'next/dynamic';
 
 const Prompter = () => {
@@ -19,6 +19,7 @@ const Prompter = () => {
   const [ready, setReady] = useState(false);
   const [started, setStarted] = useState(false);
   const [segIdx, setSegIdx] = useState(0);
+  const [sentenceMode, setSentenceMode] = useState(false);
 
   /* scroll refs */
   const scriptRef = useRef<HTMLDivElement>(null);
@@ -43,16 +44,33 @@ const Prompter = () => {
         if (settings.vad_long_ms) {
           updateVadSettings(settings.vad_long_ms);
         }
+        if (settings.sentence_mode !== undefined) {
+          setSentenceMode(!!settings.sentence_mode);
+        }
       } catch (err) {
         console.error("Error parsing settings:", err);
       }
     }
 
-    const segs = segmentScript(txt);
+    const segs = sentenceMode ? segmentSentences(txt) : segmentScript(txt);
     setSegments(segs);
     setBuckets(sentenceBuckets(segs));
     setReady(true);
   }, [updateVadSettings]);
+
+  
+  /* ───── (re)build segments whenever mode or script changes ──────── */
+  useEffect(() => {
+    if (!script) return;
+
+    const segs = sentenceMode
+      ? segmentSentences(script)
+      : segmentScript(script);
+
+    setSegments(segs);
+    setBuckets(sentenceBuckets(segs));
+    setSegIdx(0);                     // optional: reset highlight
+  }, [script, sentenceMode]);
 
   // 1) websocket bridge—only transcript & highlight events
   const { sendTranscript } = useBackend(
@@ -62,7 +80,8 @@ const Prompter = () => {
       if (event === 'highlight') {
         setSegIdx(index!);
       }
-    }
+    },
+    sentenceMode
   );
 
   // 2) VAD hook—no sendVAD anymore

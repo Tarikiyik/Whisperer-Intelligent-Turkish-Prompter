@@ -12,10 +12,11 @@ export default function Home() {
   const [fileUploaded, setFileUploaded] = useState<boolean>(false);
   const [showSettings, setShowSettings] = useState<boolean>(false);
   const [settings, setSettings] = useState({
-    tts_voice_name: "",
+    tts_voice_name: "tr-TR-Chirp3-HD-Charon",
     tts_speaking_rate: 1.0,
     tts_volume_gain_db: 0.0,
     vad_long_ms: 1500,
+    sentence_mode: true,
   });
   
   // Get access to VAD context
@@ -283,6 +284,45 @@ export default function Home() {
                   onChange={(e) => setSettings({...settings, vad_long_ms: parseInt(e.target.value)})}
                   className="w-full"
                 />
+              </div>
+
+              {/* Updated Segmentation Mode Toggle Switch */}
+              <div className="pt-2">
+                <label htmlFor="sub-sentence-mode-toggle" className="flex items-center cursor-pointer">
+                  <div className="relative">
+                    <input 
+                      type="checkbox" 
+                      id="sub-sentence-mode-toggle" 
+                      className="sr-only" // Hide default checkbox
+                      // If sentence_mode is true (default), box is UNCHECKED.
+                      // If sentence_mode is false (sub-sentence active), box is CHECKED.
+                      checked={!settings.sentence_mode}
+                      onChange={(e) => setSettings({
+                        ...settings, 
+                        // If box is checked (e.target.checked is true), set sentence_mode to false (activate sub-sentence)
+                        // If box is unchecked (e.target.checked is false), set sentence_mode to true (activate sentence)
+                        sentence_mode: !e.target.checked 
+                      })} 
+                    />
+                    {/* Line: Visual state depends on whether sub-sentence is active (!settings.sentence_mode) */}
+                    <div className={`block w-10 h-6 rounded-full transition-colors ${!settings.sentence_mode ? 'bg-blue-600' : 'bg-gray-600'}`}></div>
+                    {/* Dot: Visual state depends on whether sub-sentence is active (!settings.sentence_mode) */}
+                    <div className={`absolute left-1 top-1 bg-white w-4 h-4 rounded-full transition-transform ${!settings.sentence_mode ? 'translate-x-full' : ''}`}></div>
+                  </div>
+                  <div className="ml-3 text-sm text-gray-300">
+                    {settings.sentence_mode ? "Enable" : "Disable"} sub-sentence segmentation <span className="italic text-yellow-500">(experimental)</span>
+                  </div>
+                </label>
+                <div className="mt-2 ml-14 text-xs space-y-1">
+                  <p className="text-gray-400">
+                    Standard operation segments scripts by full sentences for optimal stability. Enabling this option activates <strong className="font-medium text-sky-400">experimental sub-sentence segmentation</strong> for more granular control.
+                  </p>
+                  <div className="p-2 mt-1 rounded-md bg-slate-700/70 border border-slate-600">
+                    <p className="text-amber-400">
+                      <span className="font-semibold">Important Note:</span> As an experimental feature, sub-sentence mode may occasionally result in minor inaccuracies with speech tracking synchronization.
+                    </p>
+                  </div>
+                </div>
               </div>
             </div>
             

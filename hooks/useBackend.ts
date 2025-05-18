@@ -5,7 +5,8 @@ import { useEffect, useRef, useState } from 'react';
 export default function useBackend(
   enabled: boolean,
   script: string,
-  onEvent: (e: { event: string; index?: number }) => void
+  onEvent: (e: { event: string; index?: number }) => void,
+  sentenceMode: boolean = false
 ) {
   const sockRef   = useRef<WebSocket | null>(null);
   const cbRef     = useRef(onEvent);
@@ -34,8 +35,11 @@ export default function useBackend(
     ws.onopen = () => {
       setIsConnected(true);
       if (!scriptSent.current && script) {
-        ws.send(JSON.stringify({ type: 'init_script', script }));
-        scriptSent.current = true;
+        ws.send(JSON.stringify({ 
+          type: 'init_script',
+          script,
+          sentenceMode
+        }));        scriptSent.current = true;
       }
     };
 
@@ -58,7 +62,7 @@ export default function useBackend(
     return () => {
       ws.close(1000, 'cleanup');
     };
-  }, [enabled, script]);
+  }, [enabled, script, sentenceMode]);
 
   // Only STT transcripts are sent to the backend now
   const sendTranscript = (text: string) => {

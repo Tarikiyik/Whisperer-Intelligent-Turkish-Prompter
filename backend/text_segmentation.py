@@ -51,6 +51,13 @@ def _clean_final_punctuation(fragment: str) -> str:
     return re.sub(r'[.!?]+$', '.', fragment) if fragment[-1].isalnum() else fragment
 
 
+# Segmentation by full sentences
+def segment_sentences(text: str) -> List[str]:
+    """Return full sentences only, without chunking."""
+    return [_clean_final_punctuation(s) for s in _split_sentences(text)]
+
+
+# Segmentation by sub-segments
 def segment_script(text: str, max_words: int = MAX_WORDS) -> List[str]:
     segments = []
     for sent in _split_sentences(text):

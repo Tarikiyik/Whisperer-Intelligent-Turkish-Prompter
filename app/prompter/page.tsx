@@ -99,12 +99,18 @@ const Prompter = () => {
   // 4) Prompt hook—play TTS audio
   const { playPrompt, stopPrompt } = usePromptPlayer();
 
-  // Play first segment when "Start Prompter" is clicked
+  // Play first segment when "Start Prompter" is clicked with a small delay to allow script to arrive
   useEffect(() => {
-    if (started) {
+    if (!started) return;
+
+    // wait ~100 ms for server to receive the new script
+    const timer = setTimeout(() => {
       playPrompt(0);
-    }
+    }, 100);
+
+    return () => clearTimeout(timer);
   }, [started]);
+
 
   // 5) On long silence, play segIdx+1 prompt
   useEffect(() => {

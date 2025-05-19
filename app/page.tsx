@@ -6,6 +6,28 @@ import { useRouter } from "next/navigation";
 import mammoth from 'mammoth';
 import { useAppVAD } from '@/contexts/VADContext';
 
+// Predefined speaking rate options
+const speakingRateOptions = [
+  { label: "Very Slow", value: 0.3 },
+  { label: "Slow", value: 0.7 },
+  { label: "Normal", value: 1.15 },
+  { label: "Fast", value: 1.5 },
+  { label: "Very Fast", value: 2.0 },
+];
+
+// Predefined volume level options
+const volumeLevelOptions = [
+  {value: -16.0 },
+  {value: -12.0},
+  {value: -8.0},
+  {value: -4.0},
+  {value: 0.0},
+  {value: 4.0},
+  {value: 8.0},
+  {value: 12.0},
+  {value: 16.0}
+];
+
 export default function Home() {
   const router = useRouter();
   const [scriptContent, setScriptContent] = useState<string>("");
@@ -13,7 +35,7 @@ export default function Home() {
   const [showSettings, setShowSettings] = useState<boolean>(false);
   const [settings, setSettings] = useState({
     tts_voice_name: "tr-TR-Chirp3-HD-Charon",
-    tts_speaking_rate: 1.0,
+    tts_speaking_rate: 1.15,
     tts_volume_gain_db: 0.0,
     vad_long_ms: 1500,
     sentence_mode: true,
@@ -26,9 +48,27 @@ export default function Home() {
     // Fetch settings from backend
     fetch("http://localhost:8000/api/settings")
       .then(res => res.json())
-      .then(data => {
-        setSettings(data);
-        updateVadSettings(data.vad_long_ms);
+      .then(fetchedData => {
+        // Snap fetched tts_speaking_rate to the nearest predefined value
+        let matchedRate = speakingRateOptions[2].value; // Default value
+        if (typeof fetchedData.tts_speaking_rate === 'number') {
+          const closestOption = speakingRateOptions.reduce((prev, curr) => 
+            Math.abs(curr.value - fetchedData.tts_speaking_rate) < Math.abs(prev.value - fetchedData.tts_speaking_rate) ? curr : prev
+          );
+          matchedRate = closestOption.value;
+        }
+        let matchedVolume = volumeLevelOptions[4].value; // Default value
+        if (typeof fetchedData.tts_volume_gain_db === 'number') {
+          const closestOption = volumeLevelOptions.reduce((prev, curr) => 
+            Math.abs(curr.value - fetchedData.tts_volume_gain_db) < Math.abs(prev.value - fetchedData.tts_volume_gain_db) ? curr : prev
+          );
+          matchedVolume = closestOption.value;
+        }
+
+        setSettings(prevSettings => ({ ...prevSettings, ...fetchedData, tts_speaking_rate: matchedRate , tts_volume_gain_db: matchedVolume }));
+        if (typeof fetchedData.vad_long_ms === 'number') {
+          updateVadSettings(fetchedData.vad_long_ms);
+        }
       })
       .catch(err => console.error("Failed to fetch settings:", err));
   }, [updateVadSettings]);
@@ -208,7 +248,7 @@ export default function Home() {
         </div>
       </div>
 
-      {/* Settings Modal */}
+      {/* Settings Container */}
       {showSettings && (
         <div className="fixed inset-0 modal-backdrop flex items-center justify-center z-50">
           <div className="modal-content rounded-lg shadow-xl p-6 w-[500px] max-w-[90%] max-h-[90vh] overflow-y-auto">
@@ -216,7 +256,7 @@ export default function Home() {
               <h2 className="text-xl font-semibold text-white">Settings</h2>
               <button 
                 onClick={() => setShowSettings(false)}
-                className="text-gray-400 hover:text-white"
+                className="text-gray-400 hover:text-white hover:cursor-pointer"
               >
                 ✕
               </button>
@@ -225,12 +265,12 @@ export default function Home() {
             <div className="space-y-4">
               <div>
                 <label className="block text-sm font-medium text-gray-300 mb-1">
-                  TTS Voice
+                 Voice Selection
                 </label>
                 <select 
                   value={settings.tts_voice_name}
                   onChange={(e) => setSettings({...settings, tts_voice_name: e.target.value})}
-                  className="w-full bg-[#0f172a] text-gray-200 rounded border border-gray-700 p-2"
+                  className="w-full bg-[#0f172a] text-gray-200 rounded border border-gray-700 p-2 hover:cursor-pointer"
                 >
                   <option value="tr-TR-Chirp3-HD-Charon">Charon (Male)</option>
                   <option value="tr-TR-Chirp3-HD-Algieba">Algieba (Male)</option>
@@ -242,38 +282,44 @@ export default function Home() {
               </div>
               
               <div>
-                <label className="block text-sm font-medium text-gray-300 mb-1">
-                  Speaking Rate: {settings.tts_speaking_rate.toFixed(2)}
+                <label className="block text-sm font-medium text-gray-300 mb-1 relative">
+                  Speaking Speed: {speakingRateOptions.find(opt => opt.value === settings.tts_speaking_rate)?.label || "Normal"}   <span className="absolute group right-0 cursor-pointer text-gray-500">?<span className="absolute bottom-full right-0 mb-2 hidden w-48 rounded bg-black text-white text-xs p-2 group-hover:block">This controls how fast the voice reads text aloud.</span></span>
                 </label>
                 <input 
                   type="range" 
-                  min="0.5" 
-                  max="2.0" 
-                  step="0.05"
-                  value={settings.tts_speaking_rate}
-                  onChange={(e) => setSettings({...settings, tts_speaking_rate: parseFloat(e.target.value)})}
-                  className="w-full"
+                  min="0" 
+                  max={speakingRateOptions.length - 1}
+                  step="1"
+                  value={speakingRateOptions.findIndex(opt => opt.value === settings.tts_speaking_rate)}
+                  onChange={(e) => {
+                    const newIndex = parseInt(e.target.value);
+                    setSettings({...settings, tts_speaking_rate: speakingRateOptions[newIndex].value });
+                  }}
+                  className={`w-full ${settings.tts_speaking_rate === 2.0 ? 'accent-red-600' : ''}`}
                 />
               </div>
               
               <div>
-                <label className="block text-sm font-medium text-gray-300 mb-1">
-                  Volume Gain (dB): {settings.tts_volume_gain_db.toFixed(1)}
+                <label className="block text-sm font-medium text-gray-300 mb-1 relative">
+                  Volume Level : {volumeLevelOptions.findIndex(opt => opt.value === settings.tts_volume_gain_db) +1} <span className="absolute group right-0 cursor-pointer text-gray-500">?<span className="absolute bottom-full right-0 mb-2 hidden w-68 rounded bg-black text-white text-xs p-2 group-hover:block">This controls the loudness of the voice. Lower values make the voice quieter, while higher values make it louder.</span></span>
                 </label>
                 <input 
                   type="range" 
-                  min="-16.0" 
-                  max="16.0" 
-                  step="0.5"
-                  value={settings.tts_volume_gain_db}
-                  onChange={(e) => setSettings({...settings, tts_volume_gain_db: parseFloat(e.target.value)})}
+                  min="0" 
+                  max={volumeLevelOptions.length - 1}
+                  step="1"
+                  value= {volumeLevelOptions.findIndex(opt => opt.value === settings.tts_volume_gain_db)}
+                  onChange={(e) => {
+                    const newIndex = parseInt(e.target.value);
+                    setSettings({...settings, tts_volume_gain_db: volumeLevelOptions[newIndex].value });
+                  }}
                   className="w-full"
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-300 mb-1">
-                  VAD Long Silence (ms): {settings.vad_long_ms}
+                <label className="block text-sm font-medium text-gray-300 mb-1 relative">
+                  Pause Detection (s): {settings.vad_long_ms / 1000} <span className="absolute group right-0 cursor-pointer text-gray-500">?<span className="absolute bottom-full right-0 mb-2 hidden w-68 rounded bg-black text-white text-xs p-2 group-hover:block">This controls the duration of how long you need to pause before the voice reads aloud the current sentence.</span></span>
                 </label>
                 <input 
                   type="range" 
@@ -286,27 +332,21 @@ export default function Home() {
                 />
               </div>
 
-              {/* Updated Segmentation Mode Toggle Switch */}
+              {/* Sub-sentence Segmentation Mode Toggle Switch */}
               <div className="pt-2">
                 <label htmlFor="sub-sentence-mode-toggle" className="flex items-center cursor-pointer">
                   <div className="relative">
                     <input 
                       type="checkbox" 
                       id="sub-sentence-mode-toggle" 
-                      className="sr-only" // Hide default checkbox
-                      // If sentence_mode is true (default), box is UNCHECKED.
-                      // If sentence_mode is false (sub-sentence active), box is CHECKED.
+                      className="sr-only" 
                       checked={!settings.sentence_mode}
                       onChange={(e) => setSettings({
                         ...settings, 
-                        // If box is checked (e.target.checked is true), set sentence_mode to false (activate sub-sentence)
-                        // If box is unchecked (e.target.checked is false), set sentence_mode to true (activate sentence)
                         sentence_mode: !e.target.checked 
                       })} 
                     />
-                    {/* Line: Visual state depends on whether sub-sentence is active (!settings.sentence_mode) */}
                     <div className={`block w-10 h-6 rounded-full transition-colors ${!settings.sentence_mode ? 'bg-blue-600' : 'bg-gray-600'}`}></div>
-                    {/* Dot: Visual state depends on whether sub-sentence is active (!settings.sentence_mode) */}
                     <div className={`absolute left-1 top-1 bg-white w-4 h-4 rounded-full transition-transform ${!settings.sentence_mode ? 'translate-x-full' : ''}`}></div>
                   </div>
                   <div className="ml-3 text-sm text-gray-300">
@@ -329,13 +369,13 @@ export default function Home() {
             <div className="mt-6 flex justify-end gap-3">
               <button 
                 onClick={() => setShowSettings(false)}
-                className="px-4 py-2 bg-gray-600 hover:bg-gray-700 text-white rounded"
+                className="px-4 py-2 bg-gray-600 hover:bg-gray-700 hover:cursor-pointer text-white rounded"
               >
                 Cancel
               </button>
               <button 
                 onClick={() => handleSettingsSave(settings)}
-                className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded"
+                className="px-4 py-2 bg-blue-600 hover:bg-blue-700 hover:cursor-pointer text-white rounded"
               >
                 Save
               </button>

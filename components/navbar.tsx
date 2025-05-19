@@ -4,13 +4,13 @@ export default function Navbar() {
  return (
     <nav className="flex items-center justify-between p-4 bg-gray-800 text-white w-full h-20">
         <div className='flex items-center justify-between w-full mx-4'>
-            <div className="text-lg font-bold">
+            <div>
                 <a href="/" >          
                     <Image 
-                            src="/logo.png" 
+                            src="/images/logo.png" 
                             alt="Logo" 
-                            width={240} 
-                            height={240} 
+                            width={200} 
+                            height={200} 
                             priority
                         />
                 </a>

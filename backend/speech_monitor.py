@@ -1,5 +1,5 @@
 """
-Monitors live transcripts, compares them against script **segments**
+SpeechMonitor is a class that monitors live transcripts, compares them against script **segments**
 (produced by text_segmentation.segment_script) and fires highlight callbacks.
 Debug output prints the expected segment, what was actually heard, and the similarity ratio.
 """
@@ -96,7 +96,9 @@ class SpeechMonitor:
             # Determine the range of segments to check (current + lookahead)
             # Start from the furthest lookahead and work backwards
             # e.g. if lookahead is 2, check: current+2, current+1, current
-            matched_in_lookahead = False
+            best_idx      = None
+            best_score    = self.thres
+            best_offset   = 0
             for lookahead_offset in range(self.lookahead_segments, -1, -1):
                 prospective_match_idx = self.current_expected_idx + lookahead_offset
                 
@@ -104,21 +106,18 @@ class SpeechMonitor:
                 if 0 <= prospective_match_idx < len(self.segments):
                     target_segment_text = self.segments[prospective_match_idx]
                     score = self._similarity(recent_spoken_text, target_segment_text, prospective_match_idx)
+                    # If the score is better than the current best, update the best match
+                    if score >= best_score:
+                        best_score = score
+                        best_idx = prospective_match_idx
+                        best_offset = lookahead_offset
 
-                    if score >= self.thres:
-                        # Matched segment `prospective_match_idx`.
-                        # The next expected segment will be `prospective_match_idx + 1`.
-                        new_expected_idx = prospective_match_idx + 1
-                        
-                        # Only update if it's a forward move and within bounds
-                        if new_expected_idx > self.current_expected_idx and new_expected_idx < len(self.segments):
-                            logging.info(f"MATCHED segment [{prospective_match_idx}] (jumped {lookahead_offset}). New expected index: {new_expected_idx}")
-                            self.current_expected_idx = new_expected_idx
-                            if self._on_update:
-                                self._on_update(self.current_expected_idx)
-                            matched_in_lookahead = True
-                            break # Exit lookahead loop once a match is found and processed
-                        elif new_expected_idx == self.current_expected_idx: # Matched current, no change needed other than logging
-                            logging.info(f"MATCHED current segment [{prospective_match_idx}]. No index change.")
-                            matched_in_lookahead = True # Mark as matched to avoid non-match logic below
-                            break
+            # If a match was found, update the expected index
+            if best_idx is not None:
+                new_expected_idx = best_idx + 1
+                if new_expected_idx > self.current_expected_idx and new_expected_idx < len(self.segments):
+                    logging.info(f"MATCHED segment [{best_idx}] (jumped {best_offset}). New expected index: {new_expected_idx}")
+                    self.current_expected_idx = new_expected_idx
+                    if self._on_update:
+                        self._on_update(self.current_expected_idx)
+                    

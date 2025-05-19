@@ -7,7 +7,7 @@ export default function AboutPage() {
             About <span className="bg-gradient-to-r from-green-400 to-blue-500 bg-clip-text text-transparent">Whisperer</span>
           </h1>
           <p className="text-lg md:text-xl text-gray-300 leading-relaxed max-w-3xl">
-            Whisperer was born from the need for a seamless, intuitive teleprompter experience, enhanced by the power of modern speech technology. We aim to help creators, presenters, and speakers deliver their message flawlessly.
+          Whisperer is a real-time, Turkish-first prompter platform that fuses cutting-edge STT, NLP, and TTS to keep presenters perfectly synchronized with their script—even when they paraphrase or change pace. Our goal is to let creators focus on delivery, not scrolling.
           </p>
         </div>
   
@@ -20,15 +20,17 @@ export default function AboutPage() {
   
         <div className="m-8 max-w-6xl w-full flex flex-col items-center justify-center gap-6 p-8 bg-[#0f172a] rounded-2xl shadow-[0_35px_60px_-15px_rgba(0,0,0,0.5)] text-center">
            <h2 className="text-3xl font-semibold mb-4">The Technology Behind Whisperer</h2>
-           <p className="text-lg text-gray-300 leading-relaxed max-w-3xl mb-4">
-             Whisperer leverages cutting-edge, real-time speech recognition to accurately track your voice. Our smart Turkish Natural Language Processing (NLP) algorithms understand the nuances of the language, allowing the script to scroll smoothly and intelligently.
+           <p className="text-lg text-gray-300 leading-relaxed max-w-3xl mb-6">
+           Under the hood, Whisperer combines several best-in-class services &nbsp;to keep latency low and alignment precise:
            </p>
 
-           <div className="text-gray-400 space-y-1">
-             <p>Real-time Speech-to-Text</p>
-             <p>Advanced Turkish NLP</p>
-             <p>Smooth Auto-Scrolling</p>
-             <p>User-friendly Interface</p>
+           <div className="text-gray-400 space-y-1 text-sm sm:text-base">
+             <p>•&nbsp; <span className="text-white">Deepgram&nbsp;Nova-2</span> for <b>real-time Turkish STT</b></p>
+             <p>•&nbsp; <span className="text-white">Fine-tuned BERTurk</span> for <b>semantic similarity</b></p>
+             <p>•&nbsp; <span className="text-white">Google TTS</span> with several voice options for <b>Turkish TTS</b></p>
+             <p>•&nbsp; <b>Adaptive segmentation</b> (sentence&nbsp;⇄&nbsp;sub-sentence) </p>
+             <p>•&nbsp; <b>WebSocket</b> backend (FastAPI&nbsp;+&nbsp;Python) for ≤ 400 ms latency</p>
+             <p>•&nbsp; <b>Voice-Activity Detection</b> to detect when the presenter is speaking</p>
            </div>
          </div>
   
@@ -38,17 +40,17 @@ export default function AboutPage() {
             <div className="text-center p-4 bg-[#1e293b] rounded-lg">
               <h3 className="text-xl font-medium mb-1">Çağatay Kahraman</h3>
               <p className="text-gray-400">Developer</p>
-              <p className="text-sm text-gray-500 mt-2">Responsible for the core functionality and backend.</p>
+              <p className="text-sm text-gray-500 mt-2">Responsible for the core functionality including both backend and frontend.</p>
             </div>
              <div className="text-center p-4 bg-[#1e293b] rounded-lg">
                <h3 className="text-xl font-medium mb-1">Tarık Arda İyik</h3>
-               <p className="text-gray-400">Lead Developer</p>
+               <p className="text-gray-400">Developer</p>
                <p className="text-sm text-gray-500 mt-2">Responsible for the core functionality including both backend and frontend.</p>
              </div>
              <div className="text-center p-4 bg-[#1e293b] rounded-lg">
                <h3 className="text-xl font-medium mb-1">Ekin İşkol</h3>
                <p className="text-gray-400">Developer</p>
-               <p className="text-sm text-gray-500 mt-2">Responsible for the core functionality and backend.</p>
+               <p className="text-sm text-gray-500 mt-2">Responsible for the core functionality including both backend and frontend.</p>
              </div>
           </div>
         </div>

@@ -8,11 +8,11 @@ import { useAppVAD } from '@/contexts/VADContext';
 
 // Predefined speaking rate options
 const speakingRateOptions = [
-  { label: "Very Slow", value: 0.3 },
-  { label: "Slow", value: 0.7 },
-  { label: "Normal", value: 1.15 },
-  { label: "Fast", value: 1.5 },
-  { label: "Very Fast", value: 2.0 },
+  { label: "Very Slow", value: 0.5 },
+  { label: "Slow", value: 0.75 },
+  { label: "Normal", value: 1.0 },
+  { label: "Fast", value: 1.25 },
+  { label: "Very Fast", value: 1.5 },
 ];
 
 // Predefined volume level options
@@ -39,6 +39,7 @@ export default function Home() {
     tts_volume_gain_db: 0.0,
     vad_long_ms: 1500,
     sentence_mode: true,
+    interrupt_on_speech: true,
   });
   
   // Get access to VAD context
@@ -319,7 +320,7 @@ export default function Home() {
 
               <div>
                 <label className="block text-sm font-medium text-gray-300 mb-1 relative">
-                  Pause Detection (s): {settings.vad_long_ms / 1000} <span className="absolute group right-0 cursor-pointer text-gray-500">?<span className="absolute bottom-full right-0 mb-2 hidden w-68 rounded bg-black text-white text-xs p-2 group-hover:block">This controls the duration of how long you need to pause before the voice reads aloud the current sentence.</span></span>
+                  Silence Detection (s): {settings.vad_long_ms / 1000} <span className="absolute group right-0 cursor-pointer text-gray-500">?<span className="absolute bottom-full right-0 mb-2 hidden w-68 rounded bg-black text-white text-xs p-2 group-hover:block">This controls the duration of how long you need to pause before the voice reads aloud the current sentence.</span></span>
                 </label>
                 <input 
                   type="range" 
@@ -330,6 +331,33 @@ export default function Home() {
                   onChange={(e) => setSettings({...settings, vad_long_ms: parseInt(e.target.value)})}
                   className="w-full"
                 />
+              </div>
+              {/* Interrupt on Speech Toggle Switch */}
+              <div className="pt-2">
+                <label htmlFor="interrupt-on-speech-toggle" className="flex items-center cursor-pointer">
+                  <div className="relative">
+                    <input 
+                      type="checkbox" 
+                      id="interrupt-on-speech-toggle" 
+                      className="sr-only" 
+                      checked={settings.interrupt_on_speech}
+                      onChange={(e) => setSettings({
+                        ...settings, 
+                        interrupt_on_speech: e.target.checked 
+                      })} 
+                    />
+                    <div className={`block w-10 h-6 rounded-full transition-colors ${settings.interrupt_on_speech ? 'bg-blue-600' : 'bg-gray-600'}`}></div>
+                    <div className={`absolute left-1 top-1 bg-white w-4 h-4 rounded-full transition-transform ${settings.interrupt_on_speech ? 'translate-x-full' : ''}`}></div>
+                  </div>
+                  <div className="ml-3 text-sm text-gray-300">
+                    Interrupt TTS when speaking
+                  </div>
+                </label>
+                <div className="mt-1 ml-14 text-xs">
+                  <p className="text-gray-400">
+                    When enabled, TTS audio will stop immediately when you start speaking. When disabled, TTS will continue playing even if you speak.
+                  </p>
+                </div>
               </div>
 
               {/* Sub-sentence Segmentation Mode Toggle Switch */}

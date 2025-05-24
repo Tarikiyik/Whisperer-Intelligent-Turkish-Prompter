@@ -9,6 +9,7 @@ import { useAppVAD } from '@/contexts/VADContext';
 import { usePromptPlayer } from '@/hooks/usePromptPlayer';
 import { segmentScript, sentenceBuckets, segmentSentences } from '@/utils/segment_util';
 import dynamic from 'next/dynamic';
+import Link from 'next/link';
 
 const Prompter = () => {
   /* ───── core state ───────────────────────────────────── */
@@ -20,6 +21,8 @@ const Prompter = () => {
   const [started, setStarted] = useState(false);
   const [segIdx, setSegIdx] = useState(0);
   const [sentenceMode, setSentenceMode] = useState(false);
+  const [completed, setCompleted] = useState(false);
+  const [interruptOnSpeech, setInterruptOnSpeech] = useState(true);
 
   /* scroll refs */
   const scriptRef = useRef<HTMLDivElement>(null);
@@ -47,6 +50,9 @@ const Prompter = () => {
         if (settings.sentence_mode !== undefined) {
           setSentenceMode(!!settings.sentence_mode);
         }
+        if (settings.interrupt_on_speech !== undefined) {
+          setInterruptOnSpeech(!!settings.interrupt_on_speech);
+        }
       } catch (err) {
         console.error("Error parsing settings:", err);
       }
@@ -69,16 +75,19 @@ const Prompter = () => {
 
     setSegments(segs);
     setBuckets(sentenceBuckets(segs));
-    setSegIdx(0);                     // optional: reset highlight
+    setSegIdx(0);                     
   }, [script, sentenceMode]);
 
-  // 1) websocket bridge—only transcript & highlight events
+  // 1) websocket bridge—transcript, highlight, and completion events
   const { sendTranscript } = useBackend(
     started && ready,
     script,
     ({ event, index }) => {
       if (event === 'highlight') {
         setSegIdx(index!);
+      } else if (event === 'completed') {
+        setCompleted(true);
+        setSegIdx(-1); // Remove highlight from all segments
       }
     },
     sentenceMode
@@ -101,7 +110,7 @@ const Prompter = () => {
 
   // Play first segment when "Start Prompter" is clicked with a small delay to allow script to arrive
   useEffect(() => {
-    if (!started) return;
+    if (!started || completed) return;
 
     // wait ~100 ms for server to receive the new script
     const timer = setTimeout(() => {
@@ -109,24 +118,23 @@ const Prompter = () => {
     }, 100);
 
     return () => clearTimeout(timer);
-  }, [started]);
+  }, [started, completed]);
 
-
-  // 5) On long silence, play segIdx+1 prompt
+  // 5) On long silence, play segIdx+1 prompt (only if not completed)
   useEffect(() => {
-    if (started && lastEvent === 'silence_long') {
+    if (started && !completed && lastEvent === 'silence_long') {
       if (segIdx < segments.length) {
         playPrompt(segIdx);
       }
     }
-  }, [lastEvent, started, segIdx, segments.length, playPrompt]);
+  }, [lastEvent, started, completed, segIdx, segments.length, playPrompt]);
 
-  /* ───── interrupt if user speaks ────────────────────── */
+  /* ───── interrupt if user speaks (conditionally) ────────────────────── */
   useEffect(() => {
-    if (started && lastEvent === 'speech_start') {
+    if (started && interruptOnSpeech && lastEvent === 'speech_start') {
       stopPrompt();
     }
-  }, [lastEvent, started, stopPrompt]);
+  }, [lastEvent, started, interruptOnSpeech, stopPrompt]);
   
   /* ───── scrolling helpers ────────────────────────────── */
   useEffect(() => {
@@ -213,17 +221,35 @@ const Prompter = () => {
         <div className="p-4 bg-red-100 text-red-800 rounded-lg mt-2 w-96 text-center">
           No script found! Please go back and upload one.
         </div>
+      ) : completed ? (
+        <div className="flex flex-col items-center space-y-3">
+          <div className="p-4 bg-green-100 text-green-800 rounded-lg mt-2 w-96 text-center">
+            🎉 Script completed successfully!
+          </div>
+          <Link href="/#script-section">
+            <button className="cursor-pointer bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-6 rounded-lg w-96">
+              Upload New Script
+            </button>
+          </Link>
+        </div>
       ) : started ? (
         <div className="p-4 bg-green-100 text-green-800 rounded-lg mt-2 w-96 text-center">
           Listening…
         </div>
       ) : (
-        <button
-          onClick={() => setStarted(true)}
-          className="cursor-pointer bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-6 rounded-lg mt-2 w-96"
-        >
-          Start Prompter
-        </button>
+        <div className="flex flex-col items-center space-y-3">
+          <button
+            onClick={() => setStarted(true)}
+            className="cursor-pointer bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-6 rounded-lg w-96"
+          >
+            Start Prompter
+          </button>
+          <Link href="/#script-section">
+            <button className="cursor-pointer bg-gray-600 hover:bg-gray-700 text-white font-bold py-3 px-6 rounded-lg w-96">
+              Back to Script Section
+            </button>
+          </Link>
+        </div>
       )}
     </div>
   );

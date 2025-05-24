@@ -38,6 +38,7 @@ class SettingsUpdate(BaseModel):
     tts_volume_gain_db: float
     vad_long_ms: int
     sentence_mode: bool
+    interrupt_on_speech: bool
 
 # Settings endpoint
 settings_router = APIRouter()
@@ -50,6 +51,7 @@ async def get_settings():
         "tts_volume_gain_db": settings.tts_volume_gain_db,
         "vad_long_ms": settings.vad_long_ms,
         "sentence_mode": settings.sentence_mode,
+        "interrupt_on_speech": settings.interrupt_on_speech,
     }
 
 @settings_router.post("/api/settings")
@@ -60,6 +62,7 @@ async def update_settings(update_data: SettingsUpdate):
     settings.tts_volume_gain_db = update_data.tts_volume_gain_db
     settings.vad_long_ms = update_data.vad_long_ms  
     settings.sentence_mode = update_data.sentence_mode
+    settings.interrupt_on_speech = update_data.interrupt_on_speech
     # This will update the in-memory settings
     
     return {"status": "success", "message": "Settings updated successfully"}
@@ -99,7 +102,7 @@ async def bridge(ws: WebSocket):
         else:
             segments = segment_script(script)
 
-        # SpeechMonitor for highlights only
+        # SpeechMonitor for highlights and completion
         mon = SpeechMonitor(
             transcript_file=TRANSCRIPT,
             expected_script=script,
@@ -109,6 +112,11 @@ async def bridge(ws: WebSocket):
         mon.set_sentence_update_callback(
             lambda idx: asyncio.create_task(
                 ws.send_json({"event": "highlight", "index": idx})
+            )
+        )
+        mon.set_completion_callback(
+            lambda: asyncio.create_task(
+                ws.send_json({"event": "completed"})
             )
         )
         mon_task = asyncio.create_task(mon.run())

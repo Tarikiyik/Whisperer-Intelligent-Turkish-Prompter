@@ -37,9 +37,11 @@ class SpeechMonitor:
 
         self.current_expected_idx = 0
         self.last_tx = ""
+        self.is_completed = False  # Track completion state
 
-        # Only the update callback remains
+        # Callbacks
         self._on_update = None
+        self._on_completion = None
 
         # Load the NLP model once
         self.model = SentenceTransformer(model_path)
@@ -49,6 +51,10 @@ class SpeechMonitor:
     def set_sentence_update_callback(self, fn):
         """Register a callback fn(idx: int) to fire when a segment is spoken."""
         self._on_update = fn
+
+    def set_completion_callback(self, fn):
+        """Register a callback fn() to fire when all segments are completed."""
+        self._on_completion = fn
 
     def _similarity(self, recent_text: str, target_segment_text: str, target_segment_idx_for_logging: int) -> float:
         """Compute cosine similarity between a target segment and recent text."""
@@ -72,6 +78,10 @@ class SpeechMonitor:
             await asyncio.sleep(0.2)
 
             if not os.path.exists(self.file):
+                continue
+
+            # If already completed, stop processing
+            if self.is_completed:
                 continue
 
             new_mtime = os.path.getmtime(self.file)
@@ -114,10 +124,17 @@ class SpeechMonitor:
 
             # If a match was found, update the expected index
             if best_idx is not None:
-                new_expected_idx = best_idx + 1
-                if new_expected_idx > self.current_expected_idx and new_expected_idx < len(self.segments):
-                    logging.info(f"MATCHED segment [{best_idx}] (jumped {best_offset}). New expected index: {new_expected_idx}")
-                    self.current_expected_idx = new_expected_idx
-                    if self._on_update:
-                        self._on_update(self.current_expected_idx)
+                # Check if this is the last segment
+                if best_idx == len(self.segments) - 1:
+                    logging.info(f"COMPLETED! Last segment [{best_idx}] was matched.")
+                    self.is_completed = True
+                    if self._on_completion:
+                        self._on_completion()
+                else:
+                    new_expected_idx = best_idx + 1
+                    if new_expected_idx > self.current_expected_idx:
+                        logging.info(f"MATCHED segment [{best_idx}] (jumped {best_offset}). New expected index: {new_expected_idx}")
+                        self.current_expected_idx = new_expected_idx
+                        if self._on_update:
+                            self._on_update(self.current_expected_idx)
                     

@@ -284,7 +284,7 @@ export default function Home() {
               
               <div>
                 <label className="block text-sm font-medium text-gray-300 mb-1 relative">
-                  {language === "en" ? "Voice Speed" : "Ses Hızı"}: {speakingRateOptions.find(opt => opt.value === settings.tts_speaking_rate)?.label || "Normal"}   <span className="absolute group right-0 cursor-pointer text-gray-500">?<span className="absolute bottom-full right-0 mb-2 hidden w-48 rounded bg-black text-white text-xs p-2 group-hover:block">{language === "en" ? "This controls how fast the voice reads text. Move the slider left for slower voice, and right for faster voice." : "Bu ayar, sesin metni okuma hızını kontrol eder. Çubuğu sola kaydırmak hızı yavalşatır, sağa kaydırmak ise hızlandırır."}</span></span>
+                  {language === "en" ? "Voice Speed" : "Ses Hızı"}: {speakingRateOptions.find(opt => opt.value === settings.tts_speaking_rate)?.label || "Normal"}   <span className="absolute group right-0 cursor-pointer text-gray-500">?<span className="absolute bottom-full right-0 mb-2 hidden w-48 rounded bg-black text-white text-xs p-2 group-hover:block">{language === "en" ? "This controls how fast the voice reads text. Move the slider left for slower voice, and right for faster voice." : "Bu ayar, sesin metni okuma hızını kontrol eder. Çubuğu sola kaydırmak hızı yavaşlatır, sağa kaydırmak ise hızlandırır."}</span></span>
                 </label>
                 <input 
                   type="range" 

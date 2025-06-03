@@ -161,9 +161,7 @@ export default function Home() {
           <span className="bg-gradient-to-r from-green-400 to-blue-500 bg-clip-text text-transparent">
             Whisperer
           </span>{" "}
-          {language === "en" ? "helps you follow your script, line by line, with real-time speech tracking," : "senin scriptinizi satır satır izlemek için size yardımcı olur,"}
-          <br />
-          {language === "en" ? "with real-time speech tracking." : "gerçek zamanlı olarak konuşmanızı takip eder."}
+          {language === "en" ? "helps you follow your script, line by line, with real-time speech tracking." : "konuşmalarınız esnasında sizi satır satır takip ederek size gerçek zamanlı şekilde yardımcı olur."}
         </div>
       </div>
 
@@ -275,18 +273,18 @@ export default function Home() {
                   onChange={(e) => setSettings({...settings, tts_voice_name: e.target.value})}
                   className="w-full bg-[#0f172a] text-gray-200 rounded border border-gray-700 p-2 hover:cursor-pointer"
                 >
-                  <option value="tr-TR-Chirp3-HD-Charon">{language === "en" ? "Charon (Male)" : "Ahmet (Erkek)"}</option>
-                  <option value="tr-TR-Chirp3-HD-Algieba">{language === "en" ? "Algieba (Male)" : "Ali (Erkek)"}</option>
-                  <option value="tr-TR-Chirp3-HD-Schedar">{language === "en" ? "Schedar (Male)" : "Berke (Erkek)"}</option>
+                  <option value="tr-TR-Chirp3-HD-Charon">{language === "en" ? "Charon (Male)" : "Charon (Erkek)"}</option>
+                  <option value="tr-TR-Chirp3-HD-Algieba">{language === "en" ? "Algieba (Male)" : "Algieba (Erkek)"}</option>
+                  <option value="tr-TR-Chirp3-HD-Schedar">{language === "en" ? "Schedar (Male)" : "Schedar (Erkek)"}</option>
                   <option value="tr-TR-Chirp3-HD-Kore">{language === "en" ? "Kore (Female)" : "Kore (Kadın)"}</option>
-                  <option value="tr-TR-Chirp3-HD-Laomedeia">{language === "en" ? "Laomedeia (Female)" : "Nur (Kadın)"}</option>
-                  <option value="tr-TR-Chirp3-HD-Vindemiatrix">{language === "en" ? "Vindemiatrix (Female)" : "Ayşe (Kadın)"}</option>
+                  <option value="tr-TR-Chirp3-HD-Laomedeia">{language === "en" ? "Laomedeia (Female)" : "Laomedeia (Kadın)"}</option>
+                  <option value="tr-TR-Chirp3-HD-Vindemiatrix">{language === "en" ? "Vindemiatrix (Female)" : "Vindemiatrix (Kadın)"}</option>
                 </select>
               </div>
               
               <div>
                 <label className="block text-sm font-medium text-gray-300 mb-1 relative">
-                  {language === "en" ? "Speaking Speed" : "Okuma Hızı"}: {speakingRateOptions.find(opt => opt.value === settings.tts_speaking_rate)?.label || "Normal"}   <span className="absolute group right-0 cursor-pointer text-gray-500">?<span className="absolute bottom-full right-0 mb-2 hidden w-48 rounded bg-black text-white text-xs p-2 group-hover:block">{language === "en" ? "This controls how fast the voice reads text aloud." : "Bu, sesin metni okuma hızını kontrol eder."}</span></span>
+                  {language === "en" ? "Voice Speed" : "Ses Hızı"}: {speakingRateOptions.find(opt => opt.value === settings.tts_speaking_rate)?.label || "Normal"}   <span className="absolute group right-0 cursor-pointer text-gray-500">?<span className="absolute bottom-full right-0 mb-2 hidden w-48 rounded bg-black text-white text-xs p-2 group-hover:block">{language === "en" ? "This controls how fast the voice reads text. Move the slider left for slower voice, and right for faster voice." : "Bu ayar, sesin metni okuma hızını kontrol eder. Çubuğu sola kaydırmak hızı yavalşatır, sağa kaydırmak ise hızlandırır."}</span></span>
                 </label>
                 <input 
                   type="range" 
@@ -304,7 +302,7 @@ export default function Home() {
               
               <div>
                 <label className="block text-sm font-medium text-gray-300 mb-1 relative">
-                  {language === "en" ? "Volume Level" : "Ses Seviyesi"}: {volumeLevelOptions.findIndex(opt => opt.value === settings.tts_volume_gain_db) +1} <span className="absolute group right-0 cursor-pointer text-gray-500">?<span className="absolute bottom-full right-0 mb-2 hidden w-68 rounded bg-black text-white text-xs p-2 group-hover:block">{language === "en" ? "This controls the loudness of the voice. Lower values make the voice quieter, while higher values make it louder." : "Bu, sesi daha sessiz veya daha yüksek yapmanıza olanak tanır."}</span></span>
+                  {language === "en" ? "Voice Volume" : "Ses Seviyesi"}: {volumeLevelOptions.findIndex(opt => opt.value === settings.tts_volume_gain_db) +1} <span className="absolute group right-0 cursor-pointer text-gray-500">?<span className="absolute bottom-full right-0 mb-2 hidden w-68 rounded bg-black text-white text-xs p-2 group-hover:block">{language === "en" ? "This controls the loudness of the voice. Move the slider left to make the voice quieter, and right to make it louder." : "Bu ayar, sesi daha sessiz veya daha yüksek yapmanıza olanak tanır. Çubuğu sola kaydırmak sesi azaltır, sağa kaydırmak ise arttırır."}</span></span>
                 </label>
                 <input 
                   type="range" 
@@ -322,7 +320,7 @@ export default function Home() {
 
               <div>
                 <label className="block text-sm font-medium text-gray-300 mb-1 relative">
-                  {language === "en" ? "Silence Detection Time(s)" : "Sessizlik Algılama Süre(s)"}: {settings.vad_long_ms / 1000} <span className="absolute group right-0 cursor-pointer text-gray-500">?<span className="absolute bottom-full right-0 mb-2 hidden w-68 rounded bg-black text-white text-xs p-2 group-hover:block">{language === "en" ? "This controls the duration of how long you need to pause before the voice reads aloud the current sentence." : "Bu, sesin şu anki cümleyi okumadan önce ne kadar süre beklemeniz gerektiğini kontrol eder."}</span></span>
+                  {language === "en" ? "Silence Detection Time(s)" : "Sessizlik Algılama Süresi(s)"}: {settings.vad_long_ms / 1000} <span className="absolute group right-0 cursor-pointer text-gray-500">?<span className="absolute bottom-full right-0 mb-2 hidden w-68 rounded bg-black text-white text-xs p-2 group-hover:block">{language === "en" ? "This controls how long the app waits after you stop speaking before it considers you have paused and the voice starts reading the current sentence." : "Bu ayar, sesin bulunduğunuz cümleyi okumaya başlamadan önce ne kadar süre sessiz kalmanızı beklediğini kontrol eder."}</span></span>
                 </label>
                 <input 
                   type="range" 
@@ -357,7 +355,7 @@ export default function Home() {
                 </label>
                 <div className="mt-1 ml-14 text-xs">
                   <p className="text-gray-400">
-                    {language === "en" ? "When enabled, the voice will pause reading your script as soon as you start speaking. When disabled, the voice will keep reading even while you are speaking." : "Bu seçenek etkinleştirildiğinde, ses siz konuşmaya başladığınızda metni okumayı durduracaktır. Bu seçenek devre dışı bırakıldığında, ses siz konuşurken metni okumaya devam edecektir."}
+                    {language === "en" ? "When enabled, the voice will pause reading your script as soon as you start speaking. When disabled, the voice will keep reading even while you are speaking." : "Bu seçenek etkinken, ses desteği siz konuşmaya başladığınızda metni okumayı durduracaktır. Bu seçenek devre dışı bırakıldığında, ses desteği siz konuşurken metni okumaya devam edecektir."}
                   </p>
                 </div>
               </div>
@@ -380,16 +378,16 @@ export default function Home() {
                     <div className={`absolute left-1 top-1 bg-white w-4 h-4 rounded-full transition-transform ${!settings.sentence_mode ? 'translate-x-full' : ''}`}></div>
                   </div>
                   <div className="ml-3 text-sm text-gray-300">
-                    {settings.sentence_mode ? language === "en" ? "Enable sub-sentence segmentation" : "Alt cümle segmentasyonu etkinleştir" : language === "en" ? "Disable sub-sentence segmentation" : "Alt cümle segmentasyonu devre dışı bırak"} <span className="italic text-yellow-500">{language === "en" ? "(experimental)" : "(deneysel)"}</span>
+                    {settings.sentence_mode ? language === "en" ? "Enable sub-sentence segmentation" : "Cümle alt segmentasyonu etkinleştir" : language === "en" ? "Disable sub-sentence segmentation" : "Cümle alt segmentasyonu devre dışı bırak"} <span className="italic text-yellow-500">{language === "en" ? "(experimental)" : "(deneysel)"}</span>
                   </div>
                 </label>
                 <div className="mt-2 ml-14 text-xs space-y-1">
                   <p className="text-gray-400">
-                    {language === "en" ? "Standard operation segments scripts by full sentences for optimal stability. Enabling this option activates": "Standart işlem, en iyi kararlılık için metinleri tam cümleler halinde böler. Bu seçeneği etkinleştirmek"} <strong className="font-medium text-sky-400">{language === "en" ? "experimental sub-sentence segmentation" : "deneysel alt cümle segmentasyonunu aktif eder."}</strong> {language === "en" ? "for more granular control." : "Bu özellik, daha ayrıntılı kontrol sağlar."}
+                    {language === "en" ? "Standard operation segments the script by full sentences for optimal stability. Enabling this option activates": "Standart yöntem, en iyi performans için metni tam cümleler halinde böler. Bu seçeneği etkinleştirmek"} <strong className="font-medium text-sky-400">{language === "en" ? "experimental sub-sentence segmentation" : "deneysel alt cümle segmentasyonunu aktif ederek"}</strong> {language === "en" ? "for more granular control." : "daha ayrıntılı kontrol sağlar."}
                   </p>
                   <div className="p-2 mt-1 rounded-md bg-slate-700/70 border border-slate-600">
                     <p className="text-amber-400">
-                      <span className="font-semibold">{language === "en" ? "Important Note:" : "Önemli Not:"}</span> {language === "en" ? "As an experimental feature, sub-sentence mode may occasionally result in minor inaccuracies with speech tracking synchronization." : "Deneysel bir özellik olduğu için, alt cümle segmentasyonu sırasında küçük hatalar oluşabilir."}
+                      <span className="font-semibold">{language === "en" ? "Important Note:" : "Önemli Not:"}</span> {language === "en" ? "As an experimental feature, sub-sentence mode may occasionally result in minor inaccuracies with speech tracking synchronization." : "Deneysel bir özellik olduğu için, cümle alt segmentasyonu hatalara sebep olabilir."}
                     </p>
                   </div>
                 </div>

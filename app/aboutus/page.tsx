@@ -12,7 +12,7 @@ export default function AboutPage() {
             {language === "en" ? "About" : "Whisperer"} <span className="bg-gradient-to-r from-green-400 to-blue-500 bg-clip-text text-transparent">{language === "en" ? "Whisperer" : "Hakkında"}</span>
           </h1>
           <p className="text-lg md:text-xl text-gray-300 leading-relaxed max-w-3xl">
-            {language === "en" ? "Whisperer is a real-time, Turkish-first prompter platform that fuses cutting-edge STT, NLP, and TTS to keep presenters perfectly synchronized with their script—even when they paraphrase or change pace. Our goal is to let creators focus on delivery, not scrolling." : "Whisperer, en yeni ses tanıma ve yapay zeka teknolojilerini kullanan, gerçek zamanlı ve Türkçe odaklı bir prompter platformudur. Sunucular, metni değiştirseler ya da farklı bir hızda konuşsalar bile, metinle tam uyumlu kalır. Hedefimiz, içerik üreticilerinin sunuma odaklanmasını, kaydırmayı düşünmemesini sağlamaktır."}
+            {language === "en" ? "Whisperer is a real-time, Turkish-first prompter platform that fuses cutting-edge STT, NLP, and TTS to keep presenters perfectly synchronized with their script—even when they paraphrase or change pace. Our goal is to let presenters focus on delivery, and not worry about anything else." : "Whisperer, en yeni ses tanıma ve yapay zeka teknolojilerini kullanan, gerçek zamanlı ve Türkçe odaklı bir prompter platformudur. Konuşmacılar, metni değiştirseler ya da farklı bir hızda konuşsalar bile, uygulama metinle senkronizasoyunu korur. Hedefimiz, konuşmacıların yalnızca sunuma odaklanmasını, ve başka şeyleri düşünmemesini sağlamaktır."}
           </p>
         </div>
   
@@ -30,11 +30,11 @@ export default function AboutPage() {
            </p>
 
            <div className="text-gray-400 space-y-1 text-sm sm:text-base">
-             <p>•&nbsp; <span className="text-white">Deepgram&nbsp;Nova-2</span> {language === "en" ? "for" : "ile"} <b>{language === "en" ? "real-time Turkish STT" : "gerçek zamanlı Türkçe konuşma tanıma"}</b></p>
-             <p>•&nbsp; <span className="text-white">{language === "en" ? "Fine-tuned BERTurk" : "İnce ayarlı BERTurk"}</span> {language === "en" ? "for" : "ile"} <b>{language === "en" ? "semantic similarity" : "anlamsal benzerlik"}</b></p>
-             <p>•&nbsp; <span className="text-white">Google TTS</span> {language === "en" ? "with several voice options for" : "ile çoklu ses seçenekleri"} <b>{language === "en" ? "Turkish TTS" : ""}</b></p>
-             <p>•&nbsp; <b>{language === "en" ? "Adaptive segmentation" : "Uyarlanabilir bölümleme"}</b> ({language === "en" ? "sentence" : "cümle"}&nbsp;⇄&nbsp;{language === "en" ? "sub-sentence" : "alt-cümle"}) </p>
-             <p>•&nbsp; <b>WebSocket</b> {language === "en" ? "backend" : "arka uç"} (FastAPI&nbsp;+&nbsp;Python) {language === "en" ? "for" : "ile"} ≤ 400 ms {language === "en" ? "latency" : "gecikme"}</p>
+             <p>•&nbsp; <span className="text-white">Deepgram&nbsp;Nova-2</span> {language === "en" ? "for" : "ile"} <b>{language === "en" ? "real-time Turkish STT" : "gerçek zamanlı Türkçe STT"}</b></p>
+             <p>•&nbsp; <span className="text-white">{language === "en" ? "Fine-tuned LaBSE" : "İnce ayarlı LaBSE"}</span> {language === "en" ? "for" : "ile"} <b>{language === "en" ? "semantic similarity analysis" : "anlamsal benzerlik algılama"}</b></p>
+             <p>•&nbsp; <span className="text-white">Google TTS</span> {language === "en" ? "with several voice options for" : "ile Türkçe için çoklu ses seçenekleri"} <b>{language === "en" ? "Turkish TTS" : ""}</b></p>
+             <p>•&nbsp; <b>{language === "en" ? "Adaptive segmentation" : "Adaptif segmentasyon"}</b> ({language === "en" ? "sentence" : "cümle"}&nbsp;⇄&nbsp;{language === "en" ? "sub-sentence" : "alt-cümle"}) </p>
+             <p>•&nbsp; <b>WebSocket</b> {language === "en" ? "backend" : "arka uç"} (FastAPI&nbsp;+&nbsp;Python) {language === "en" ? "for" : "ile"} ≤ 800 ms {language === "en" ? "latency" : "gecikme"}</p>
              <p>•&nbsp; <b>{language === "en" ? "Voice-Activity Detection" : "Ses Aktivitesi Algılama"}</b> {language === "en" ? "to detect when the presenter is speaking" : "sunucunun ne zaman konuştuğunu algılamak için"}</p>
            </div>
          </div>

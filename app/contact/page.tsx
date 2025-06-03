@@ -13,13 +13,13 @@ export default function ContactPage() {
             {language === "en" ? "Contact" : "Bizimle"} <span className="bg-gradient-to-r from-green-400 to-blue-500 bg-clip-text text-transparent">{language === "en" ? "İletişime Geçin" : "İletişime Geçin"}</span>
           </h1>
           <p className="text-lg md:text-xl text-gray-300 leading-relaxed max-w-3xl">
-            {language === "en" ? "Have questions, feedback, or need support? We'd love to hear from you. Fill out the form below or reach out using the details provided." : "Sorularınız, geri bildirimleriniz veya destek ihtiyacınız mı var? Sizden duymak isteriz. Formu doldurun veya verilen ayrıntıları kullanarak iletişime geçin."}
+            {language === "en" ? "Have questions, feedback, or need support? We'd love to hear from you. Fill out the form below or reach out using the details provided." : "Sorularınız, geri bildirimleriniz veya destek ihtiyacınız mı var? Formu doldurun veya verilen ayrıntıları kullanarak hemen iletişime geçin."}
           </p>
         </div>
   
 
         <div className="m-8 max-w-4xl w-full p-8 bg-[#0f172a] rounded-2xl shadow-[0_35px_60px_-15px_rgba(0,0,0,0.5)]">
-          <h2 className="text-3xl font-semibold mb-8 text-center">{language === "en" ? "Send Us a Message" : "Bize mesaj gönderin"}</h2>
+          <h2 className="text-3xl font-semibold mb-8 text-center">{language === "en" ? "Send Us a Message" : "Bize bir mesaj gönderin"}</h2>
           <form className="space-y-6" >
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div>

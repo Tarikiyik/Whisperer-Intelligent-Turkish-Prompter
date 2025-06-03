@@ -284,7 +284,7 @@ export default function Home() {
               
               <div>
                 <label className="block text-sm font-medium text-gray-300 mb-1 relative">
-                  Speaking Speed: {speakingRateOptions.find(opt => opt.value === settings.tts_speaking_rate)?.label || "Normal"}   <span className="absolute group right-0 cursor-pointer text-gray-500">?<span className="absolute bottom-full right-0 mb-2 hidden w-48 rounded bg-black text-white text-xs p-2 group-hover:block">This controls how fast the voice reads text aloud.</span></span>
+                  Voice Speed: {speakingRateOptions.find(opt => opt.value === settings.tts_speaking_rate)?.label || "Normal"}   <span className="absolute group right-0 cursor-pointer text-gray-500">?<span className="absolute bottom-full right-0 mb-2 hidden w-48 rounded bg-black text-white text-xs p-2 group-hover:block">This controls how fast the voice reads text. Move the slider left for slower voice, and right for faster voice.</span></span>
                 </label>
                 <input 
                   type="range" 
@@ -302,7 +302,7 @@ export default function Home() {
               
               <div>
                 <label className="block text-sm font-medium text-gray-300 mb-1 relative">
-                  Volume Level : {volumeLevelOptions.findIndex(opt => opt.value === settings.tts_volume_gain_db) +1} <span className="absolute group right-0 cursor-pointer text-gray-500">?<span className="absolute bottom-full right-0 mb-2 hidden w-68 rounded bg-black text-white text-xs p-2 group-hover:block">This controls the loudness of the voice. Lower values make the voice quieter, while higher values make it louder.</span></span>
+                  Voice Volume: {volumeLevelOptions.findIndex(opt => opt.value === settings.tts_volume_gain_db) +1} <span className="absolute group right-0 cursor-pointer text-gray-500">?<span className="absolute bottom-full right-0 mb-2 hidden w-68 rounded bg-black text-white text-xs p-2 group-hover:block">This controls the loudness of the voice. Move the slider left to make the voice quieter, and right to make it louder.</span></span>
                 </label>
                 <input 
                   type="range" 
@@ -320,7 +320,7 @@ export default function Home() {
 
               <div>
                 <label className="block text-sm font-medium text-gray-300 mb-1 relative">
-                  Silence Detection (s): {settings.vad_long_ms / 1000} <span className="absolute group right-0 cursor-pointer text-gray-500">?<span className="absolute bottom-full right-0 mb-2 hidden w-68 rounded bg-black text-white text-xs p-2 group-hover:block">This controls the duration of how long you need to pause before the voice reads aloud the current sentence.</span></span>
+                  Silence Detection Time(s): {settings.vad_long_ms / 1000} <span className="absolute group right-0 cursor-pointer text-gray-500">?<span className="absolute bottom-full right-0 mb-2 hidden w-68 rounded bg-black text-white text-xs p-2 group-hover:block">How long the app waits after you stop speaking before it considers you have paused and the voice starts reading the current sentence.</span></span>
                 </label>
                 <input 
                   type="range" 
@@ -350,16 +350,15 @@ export default function Home() {
                     <div className={`absolute left-1 top-1 bg-white w-4 h-4 rounded-full transition-transform ${settings.interrupt_on_speech ? 'translate-x-full' : ''}`}></div>
                   </div>
                   <div className="ml-3 text-sm text-gray-300">
-                    Interrupt TTS when speaking
+                    Pause the voice when you start speaking
                   </div>
                 </label>
                 <div className="mt-1 ml-14 text-xs">
                   <p className="text-gray-400">
-                    When enabled, TTS audio will stop immediately when you start speaking. When disabled, TTS will continue playing even if you speak.
+                    When enabled, the voice will pause reading your script as soon as you start speaking. When disabled, the voice will keep reading even while you are speaking.
                   </p>
                 </div>
               </div>
-
               {/* Sub-sentence Segmentation Mode Toggle Switch */}
               <div className="pt-2">
                 <label htmlFor="sub-sentence-mode-toggle" className="flex items-center cursor-pointer">
@@ -383,7 +382,7 @@ export default function Home() {
                 </label>
                 <div className="mt-2 ml-14 text-xs space-y-1">
                   <p className="text-gray-400">
-                    Standard operation segments scripts by full sentences for optimal stability. Enabling this option activates <strong className="font-medium text-sky-400">experimental sub-sentence segmentation</strong> for more granular control.
+                    Standard operation segments the script by full sentences for optimal stability. Enabling this option activates <strong className="font-medium text-sky-400">experimental sub-sentence segmentation</strong> for more granular control.
                   </p>
                   <div className="p-2 mt-1 rounded-md bg-slate-700/70 border border-slate-600">
                     <p className="text-amber-400">

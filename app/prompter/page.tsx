@@ -10,6 +10,7 @@ import { usePromptPlayer } from '@/hooks/usePromptPlayer';
 import { segmentScript, sentenceBuckets, segmentSentences } from '@/utils/segment_util';
 import dynamic from 'next/dynamic';
 import Link from 'next/link';
+import { useLanguage } from '@/contexts/LanguageContext';
 
 const Prompter = () => {
   /* ───── core state ───────────────────────────────────── */
@@ -23,6 +24,7 @@ const Prompter = () => {
   const [sentenceMode, setSentenceMode] = useState(false);
   const [completed, setCompleted] = useState(false);
   const [interruptOnSpeech, setInterruptOnSpeech] = useState(true);
+  const { language } = useLanguage();
 
   /* scroll refs */
   const scriptRef = useRef<HTMLDivElement>(null);
@@ -207,7 +209,7 @@ const Prompter = () => {
                     {t}
                   </p>
                 ))
-              : <p className="text-gray-500 italic">Transcriptions will appear here…</p>}
+              : <p className="text-gray-500 italic">{language === "en" ? "Transcriptions will appear here…" : "Transkripsiyonlar burada görünecek…"}</p>}
           </div>
         </div>
       )}
@@ -215,26 +217,26 @@ const Prompter = () => {
       {/* controls / status */}
       {!ready ? (
         <div className="p-4 bg-yellow-100 text-yellow-800 rounded-lg mt-2 w-96 text-center">
-          Loading script…
+          {language === "en" ? "Loading script…" : "Senaryo yükleniyor…"}
         </div>
       ) : !script ? (
         <div className="p-4 bg-red-100 text-red-800 rounded-lg mt-2 w-96 text-center">
-          No script found! Please go back and upload one.
+          {language === "en" ? "No script found! Please go back and upload one." : "Yüklenmiş bir senaryo bulunamadı! Lütfen geri dönüp bir senaryo yükleyin."}
         </div>
       ) : completed ? (
         <div className="flex flex-col items-center space-y-3">
           <div className="p-4 bg-green-100 text-green-800 rounded-lg mt-2 w-96 text-center">
-            🎉 Script completed successfully!
+            {language === "en" ? "🎉 Script completed successfully" : "Senaryo başarıyla tamamlandı! 🎉"}
           </div>
           <Link href="/#script-section">
             <button className="cursor-pointer bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-6 rounded-lg w-96">
-              Upload New Script
+              {language === "en" ? "Upload New Script" : "Yeni bir senaryo yükle"}
             </button>
           </Link>
         </div>
       ) : started ? (
         <div className="p-4 bg-green-100 text-green-800 rounded-lg mt-2 w-96 text-center">
-          Listening…
+          {language === "en" ? "Listening…" : "Dinliyor…"}
         </div>
       ) : (
         <div className="flex flex-col items-center space-y-3">
@@ -242,11 +244,11 @@ const Prompter = () => {
             onClick={() => setStarted(true)}
             className="cursor-pointer bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-6 rounded-lg w-96"
           >
-            Start Prompter
+            {language === "en" ? "Start Prompter" : "Prompter'ı başlat"}
           </button>
           <Link href="/#script-section">
             <button className="cursor-pointer bg-gray-600 hover:bg-gray-700 text-white font-bold py-3 px-6 rounded-lg w-96">
-              Back to Script Section
+              {language === "en" ? "Back to Script Section" : "Senaryo yükleme bölümüne geri dön"}
             </button>
           </Link>
         </div>

@@ -10,7 +10,7 @@ export default function ContactPage() {
   
         <div className="m-8 max-w-6xl w-full flex flex-col items-center justify-center gap-6 p-8 bg-[#0f172a] rounded-2xl shadow-[0_35px_60px_-15px_rgba(0,0,0,0.5)] text-center">
           <h1 className="text-4xl md:text-5xl font-bold leading-tight mb-2">
-            {language === "en" ? "Contact" : "Bizimle"} <span className="bg-gradient-to-r from-green-400 to-blue-500 bg-clip-text text-transparent">{language === "en" ? "İletişime Geçin" : "İletişime Geçin"}</span>
+            {language === "en" ? "Contact" : "Bizimle"} <span className="bg-gradient-to-r from-green-400 to-blue-500 bg-clip-text text-transparent">{language === "en" ? "Us" : "İletişime Geçin"}</span>
           </h1>
           <p className="text-lg md:text-xl text-gray-300 leading-relaxed max-w-3xl">
             {language === "en" ? "Have questions, feedback, or need support? We'd love to hear from you. Fill out the form below or reach out using the details provided." : "Sorularınız, geri bildirimleriniz veya destek ihtiyacınız mı var? Formu doldurun veya verilen ayrıntıları kullanarak hemen iletişime geçin."}

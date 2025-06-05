@@ -9,11 +9,11 @@ import { useLanguage } from '@/contexts/LanguageContext';
 
 // Predefined speaking rate options
 const speakingRateOptions = [
-  { label: "Very Slow", value: 0.5 },
-  { label: "Slow", value: 0.75 },
-  { label: "Normal", value: 1.0 },
+  { label: "Very Slow", value: 0.80 },
+  { label: "Slow", value: 0.95 },
+  { label: "Normal", value: 1.10 },
   { label: "Fast", value: 1.25 },
-  { label: "Very Fast", value: 1.5 },
+  { label: "Very Fast", value: 1.4 },
 ];
 
 // Predefined volume level options

@@ -8,7 +8,7 @@ logging.basicConfig(level=logging.INFO)
 # ── tunable parameters (change here only) ──────────────────────────────
 MAX_WORDS = 10      # hard cap size of a sub-segment
 MIN_WORDS = 4       # if the *last* fragment is shorter, merge it back
-WINDOW     = 3      # how far we can look back for a nicer split point
+WINDOW    = 3      # how far we can look back for a nicer split point
 # ───────────────────────────────────────────────────────────────────────
 
 # negative look-behind avoids “20.”,  “7.”  etc. being treated as EOS
@@ -51,6 +51,13 @@ def _clean_final_punctuation(fragment: str) -> str:
     return re.sub(r'[.!?]+$', '.', fragment) if fragment[-1].isalnum() else fragment
 
 
+# Segmentation by full sentences
+def segment_sentences(text: str) -> List[str]:
+    """Return full sentences only, without chunking."""
+    return [_clean_final_punctuation(s) for s in _split_sentences(text)]
+
+
+# Segmentation by sub-segments
 def segment_script(text: str, max_words: int = MAX_WORDS) -> List[str]:
     segments = []
     for sent in _split_sentences(text):

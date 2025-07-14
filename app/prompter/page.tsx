@@ -5,56 +5,139 @@ import { useState, useEffect, useRef } from 'react';
 import useDeepgramRaw from '@/hooks/useDeepgramRaw';
 import useBackend from '@/hooks/useBackend';
 import useVAD from '@/hooks/useVAD';
-import { segmentScript, sentenceBuckets } from '@/utils/segment_util';
+import { useAppVAD } from '@/contexts/VADContext';
+import { usePromptPlayer } from '@/hooks/usePromptPlayer';
+import { segmentScript, sentenceBuckets, segmentSentences } from '@/utils/segment_util';
+import dynamic from 'next/dynamic';
+import Link from 'next/link';
+import { useLanguage } from '@/contexts/LanguageContext';
 
-export default function Prompter() {
+const Prompter = () => {
   /* ───── core state ───────────────────────────────────── */
   const [script, setScript] = useState('');
   const [segments, setSegments] = useState<string[]>([]);
   const [buckets, setBuckets] = useState<number[][]>([]);
   const [lines, setLines] = useState<string[]>([]);
-
   const [ready, setReady] = useState(false);
   const [started, setStarted] = useState(false);
   const [segIdx, setSegIdx] = useState(0);
-  const [paused, setPaused] = useState(false);
+  const [sentenceMode, setSentenceMode] = useState(false);
+  const [completed, setCompleted] = useState(false);
+  const [interruptOnSpeech, setInterruptOnSpeech] = useState(true);
+  const { language } = useLanguage();
 
   /* scroll refs */
   const scriptRef = useRef<HTMLDivElement>(null);
   const transcriptRef = useRef<HTMLDivElement>(null);
 
+  /* Get access to VAD context */
+  const { updateVadSettings } = useAppVAD();
+
   /* ───── load script ──────────────────────────────────── */
   useEffect(() => {
+    // Only run in browser
+    if (typeof window === 'undefined') return;
+    
     const txt = sessionStorage.getItem('scriptContent') ?? '';
     setScript(txt);
 
-    const segs = segmentScript(txt);
+    /* Load settings*/
+    const settingsJson = sessionStorage.getItem('settings');
+    if (settingsJson) {
+      try {
+        const settings = JSON.parse(settingsJson);
+        if (settings.vad_long_ms) {
+          updateVadSettings(settings.vad_long_ms);
+        }
+        if (settings.sentence_mode !== undefined) {
+          setSentenceMode(!!settings.sentence_mode);
+        }
+        if (settings.interrupt_on_speech !== undefined) {
+          setInterruptOnSpeech(!!settings.interrupt_on_speech);
+        }
+      } catch (err) {
+        console.error("Error parsing settings:", err);
+      }
+    }
+
+    const segs = sentenceMode ? segmentSentences(txt) : segmentScript(txt);
     setSegments(segs);
     setBuckets(sentenceBuckets(segs));
     setReady(true);
-  }, []);
+  }, [updateVadSettings]);
 
-  /* ───── WebSocket bridge to backend ──────────────────── */
-  const { sendTranscript, sendVAD } = useBackend(
+  
+  /* ───── (re)build segments whenever mode or script changes ──────── */
+  useEffect(() => {
+    if (!script) return;
+
+    const segs = sentenceMode
+      ? segmentSentences(script)
+      : segmentScript(script);
+
+    setSegments(segs);
+    setBuckets(sentenceBuckets(segs));
+    setSegIdx(0);                     
+  }, [script, sentenceMode]);
+
+  // 1) websocket bridge—transcript, highlight, and completion events
+  const { sendTranscript } = useBackend(
     started && ready,
     script,
     ({ event, index }) => {
-      if (event === 'highlight') setSegIdx(index!);
-      if (event === 'pause') setPaused(true);
-      if (event === 'resume') setPaused(false);
-    }
+      if (event === 'highlight') {
+        setSegIdx(index!);
+      } else if (event === 'completed') {
+        setCompleted(true);
+        setSegIdx(-1); // Remove highlight from all segments
+      }
+    },
+    sentenceMode
   );
 
-  /* ───── Deepgram STT hook ────────────────────────────── */
+  // 2) VAD hook—no sendVAD anymore
+  const { lastEvent, silenceType } = useVAD(started);
+  const { audioStream } = useAppVAD(); 
+
+  // 3) STT → SpeechMonitor hook
   useDeepgramRaw(
     (txt) => setLines((prev) => [...prev, txt]),
     started,
-    sendTranscript
+    sendTranscript,
+    audioStream  
   );
 
-  /* ───── VAD hook ─────────────────────────── */
-  const { isSpeaking, silenceType, lastEvent } = useVAD(started, sendVAD);
+  // 4) Prompt hook—play TTS audio
+  const { playPrompt, stopPrompt } = usePromptPlayer();
 
+  // Play first segment when "Start Prompter" is clicked with a small delay to allow script to arrive
+  useEffect(() => {
+    if (!started || completed) return;
+
+    // wait ~100 ms for server to receive the new script
+    const timer = setTimeout(() => {
+      playPrompt(0);
+    }, 100);
+
+    return () => clearTimeout(timer);
+  }, [started, completed]);
+
+  // 5) On long silence, play segIdx+1 prompt (only if not completed)
+  useEffect(() => {
+    if (started && !completed && lastEvent === 'silence_long') {
+      if (segIdx < segments.length) {
+        playPrompt(segIdx);
+      }
+    }
+  }, [lastEvent, started, completed, segIdx, segments.length, playPrompt]);
+
+  /* ───── interrupt if user speaks (conditionally) ────────────────────── */
+  useEffect(() => {
+    if (started && interruptOnSpeech && lastEvent === 'speech_start') {
+      stopPrompt();
+    }
+  }, [lastEvent, started, interruptOnSpeech, stopPrompt]);
+  
   /* ───── scrolling helpers ────────────────────────────── */
   useEffect(() => {
     if (!scriptRef.current) return;
@@ -87,7 +170,6 @@ export default function Prompter() {
     
     // For long silence - persistent warning
     if (silenceType === 'long') {
-      // Add warning highlight
       scriptEl.classList.add('warn-silence');
     } else {
       // Remove warning when no longer in long silence
@@ -127,7 +209,7 @@ export default function Prompter() {
                     {t}
                   </p>
                 ))
-              : <p className="text-gray-500 italic">Transcriptions will appear here…</p>}
+              : <p className="text-gray-500 italic">{language === "en" ? "Transcriptions will appear here…" : "Transkripsiyonlar burada görünecek…"}</p>}
           </div>
         </div>
       )}
@@ -135,24 +217,47 @@ export default function Prompter() {
       {/* controls / status */}
       {!ready ? (
         <div className="p-4 bg-yellow-100 text-yellow-800 rounded-lg mt-2 w-96 text-center">
-          Loading script…
+          {language === "en" ? "Loading script…" : "Senaryo yükleniyor…"}
         </div>
       ) : !script ? (
         <div className="p-4 bg-red-100 text-red-800 rounded-lg mt-2 w-96 text-center">
-          No script found! Please go back and upload one.
+          {language === "en" ? "No script found! Please go back and upload one." : "Yüklenmiş bir senaryo bulunamadı! Lütfen geri dönüp bir senaryo yükleyin."}
+        </div>
+      ) : completed ? (
+        <div className="flex flex-col items-center space-y-3">
+          <div className="p-4 bg-green-100 text-green-800 rounded-lg mt-2 w-96 text-center">
+            {language === "en" ? "🎉 Script completed successfully" : "Senaryo başarıyla tamamlandı! 🎉"}
+          </div>
+          <Link href="/#script-section">
+            <button className="cursor-pointer bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-6 rounded-lg w-96">
+              {language === "en" ? "Upload New Script" : "Yeni bir senaryo yükle"}
+            </button>
+          </Link>
         </div>
       ) : started ? (
         <div className="p-4 bg-green-100 text-green-800 rounded-lg mt-2 w-96 text-center">
-          Listening…
+          {language === "en" ? "Listening…" : "Dinliyor…"}
         </div>
       ) : (
-        <button
-          onClick={() => setStarted(true)}
-          className="cursor-pointer bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-6 rounded-lg mt-2 w-96"
-        >
-          Start Prompter
-        </button>
+        <div className="flex flex-col items-center space-y-3">
+          <button
+            onClick={() => setStarted(true)}
+            className="cursor-pointer bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-6 rounded-lg w-96"
+          >
+            {language === "en" ? "Start Prompter" : "Prompter'ı başlat"}
+          </button>
+          <Link href="/#script-section">
+            <button className="cursor-pointer bg-gray-600 hover:bg-gray-700 text-white font-bold py-3 px-6 rounded-lg w-96">
+              {language === "en" ? "Back to Script Section" : "Senaryo yükleme bölümüne geri dön"}
+            </button>
+          </Link>
+        </div>
       )}
     </div>
   );
-}
+};
+
+// Use dynamic import to skip SSR
+export default dynamic(() => Promise.resolve(Prompter), {
+  ssr: false
+});

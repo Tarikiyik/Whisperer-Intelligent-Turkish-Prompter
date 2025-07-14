@@ -15,3 +15,4 @@ uvicorn[standard]==0.29.*
 packaging>=16.8,<24
 protobuf>=3.20,<5
 rich>=10.14.0,<14
+sentence_transformers

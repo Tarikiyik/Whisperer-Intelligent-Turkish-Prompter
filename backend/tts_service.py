@@ -1,11 +1,14 @@
 """
-tts_service.py – Google Cloud bidirectional streaming TTS helper
+tts_service.py: Google TTS service for Turkish language synthesis.
+This module provides functionality for text-to-speech synthesis using Google Cloud's Text-to-Speech API.
+It includes both one-shot synthesis and streaming synthesis capabilities, allowing for real-time audio playback of synthesized speech. 
+The module also handles text segmentation and provides methods to pause and resume audio playback.
+It is designed to work with Turkish language settings and can be configured through environment variables defined in a separate configuration file.
 """
 
-import os, logging, itertools, time
+import os, logging
 from google.cloud import texttospeech
-import pyaudio
-from text_segmentation import segment_script
+from config import settings
 
 logging.basicConfig(level=logging.INFO)
 
@@ -14,63 +17,45 @@ class TurkishTTS:
         os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = credentials_path
         self.client = texttospeech.TextToSpeechClient()
         self.last_segment_index = 0
-        self.pause_feed  = False
-        self._pause_noticed = False   # internal flag
+        self.pause_feed = False
+        self._last_state = False  # Track the previous state
 
     # ─── external controls ────────────────────────────────────────────────────
     def pause_feeding(self):
-        self.pause_feed = True
-        self._pause_noticed = False   # log once
-        logging.info("TTS feeding paused.")
+        if not self._last_state:  # Only log if changing from unpaused to paused
+            self.pause_feed = True
+            self._last_state = True
+            logging.info("TTS feeding paused.")
 
     def resume_feeding(self):
-        self.pause_feed = False
-        logging.info("TTS feeding resumed.")
+        if self._last_state:  # Only log if changing from paused to unpaused
+            self.pause_feed = False
+            self._last_state = False
+            logging.info("TTS feeding resumed.")
 
-    # ─── one-shot synthesis (unchanged) ───────────────────────────────────────
-    def synthesize(self, text, output_file=None, speaking_rate=1.0,
-                   effects_profile=["headphone-class-device"], ssml=False):
-        pass
+    # ─── one-shot synthesis ───────────────────────────────────────
+    def synthesize_text(self, text: str) -> bytes:
+        """
+        Single-shot TTS: returns raw audio bytes (LINEAR16) for the given text,
+        using parameters defined in config.py.
+        """
+        synthesis_input = texttospeech.SynthesisInput(text=text)
 
-    # ─── streaming synthesis ─────────────────────────────────────────────────
-    def stream_synthesize(self, text, speaking_rate=1.2,
-                          effects_profile=["headphone-class-device"],
-                          segment_delay=1.0, start_segment=0):
-        segments = segment_script(text)
-        logging.info("Total segments: %d", len(segments))
-        self.last_segment_index = start_segment
+        voice_params = texttospeech.VoiceSelectionParams(
+            language_code="tr-TR",
+            name=settings.tts_voice_name,
+        )
 
-        pa = pyaudio.PyAudio()
-        stream = pa.open(format=pyaudio.paInt16, channels=1, rate=24000, output=True)
-        logging.info("PyAudio stream opened for playback.")
+        audio_config = texttospeech.AudioConfig(
+            audio_encoding=texttospeech.AudioEncoding.LINEAR16,
+            speaking_rate=settings.tts_speaking_rate,
+            volume_gain_db=settings.tts_volume_gain_db,
+            effects_profile_id=["headphone-class-device"],
+        )
 
-        for idx in range(start_segment, len(segments)):
-            # handle pause ------------------------------------------------------
-            while self.pause_feed:
-                if not self._pause_noticed:
-                    logging.info("TTS feed paused. Waiting…")
-                    self._pause_noticed = True
-                time.sleep(0.1)
-            self._pause_noticed = False
-
-            # stream current segment ------------------------------------------
-            seg_text = segments[idx]
-            cfg = texttospeech.StreamingSynthesizeConfig(
-                voice=texttospeech.VoiceSelectionParams(
-                    language_code="tr-TR", name="tr-TR-Chirp3-HD-Leda"))
-            requests = itertools.chain(
-                [texttospeech.StreamingSynthesizeRequest(streaming_config=cfg)],
-                [texttospeech.StreamingSynthesizeRequest(
-                    input=texttospeech.StreamingSynthesisInput(text=seg_text))]
-            )
-            for resp in self.client.streaming_synthesize(requests):
-                if resp.audio_content:
-                    stream.write(resp.audio_content)
-
-            self.last_segment_index = idx
-            # simple pacing heuristic
-            delay = len(seg_text.split()) * 0.2
-            time.sleep(delay)
-
-        stream.stop_stream(); stream.close(); pa.terminate()
-        logging.info("TTS playback finished.")
+        response = self.client.synthesize_speech(
+            input=synthesis_input,
+            voice=voice_params,
+            audio_config=audio_config,
+        )
+        return response.audio_content

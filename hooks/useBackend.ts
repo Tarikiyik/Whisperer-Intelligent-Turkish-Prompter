@@ -1,40 +1,45 @@
 // hooks/useBackend.ts
+
 import { useEffect, useRef, useState } from 'react';
 
 export default function useBackend(
   enabled: boolean,
   script: string,
-  onEvent: (e: { event: string; index?: number }) => void
+  onEvent: (e: { event: string; index?: number }) => void,
+  sentenceMode: boolean = false
 ) {
-  const sock    = useRef<WebSocket | null>(null);
-  const cbRef   = useRef(onEvent);          // always point to latest handler
-  cbRef.current = onEvent;
-
+  const sockRef   = useRef<WebSocket | null>(null);
+  const cbRef     = useRef(onEvent);
+  const scriptSent = useRef(false);
   const [isConnected, setIsConnected] = useState(false);
-  const reconnects  = useRef(0);
-  const scriptSent  = useRef(false);
 
-  /* ───── connect once per component lifecycle ─────────── */
+  // Always keep cbRef.current up to date
+  useEffect(() => {
+    cbRef.current = onEvent;
+  }, [onEvent]);
+
+  // Establish WebSocket when enabled
   useEffect(() => {
     if (!enabled) return;
-
-    // Prevent duplicate sockets
+    // Avoid duplicate connections
     if (
-      sock.current?.readyState === WebSocket.OPEN ||
-      sock.current?.readyState === WebSocket.CONNECTING
-    )
+      sockRef.current?.readyState === WebSocket.OPEN ||
+      sockRef.current?.readyState === WebSocket.CONNECTING
+    ) {
       return;
+    }
 
     const ws = new WebSocket('ws://127.0.0.1:8000/ws');
-    sock.current = ws;
+    sockRef.current = ws;
 
     ws.onopen = () => {
       setIsConnected(true);
-      reconnects.current = 0;
-
       if (!scriptSent.current && script) {
-        ws.send(JSON.stringify({ type: 'init_script', script }));
-        scriptSent.current = true;
+        ws.send(JSON.stringify({ 
+          type: 'init_script',
+          script,
+          sentenceMode
+        }));        scriptSent.current = true;
       }
     };
 
@@ -47,25 +52,25 @@ export default function useBackend(
       }
     };
 
-    ws.onclose = () => setIsConnected(false);
-    ws.onerror = (e) => console.error('WS error', e);
+    ws.onclose = () => {
+      setIsConnected(false);
+    };
+    ws.onerror = (e) => {
+      console.error('WS error', e);
+    };
 
-    return () => ws.close(1000, 'cleanup');
-  }, [enabled, script]);
+    return () => {
+      ws.close(1000, 'cleanup');
+    };
+  }, [enabled, script, sentenceMode]);
 
-  /* ───── helpers ──────────────────────────────────────── */
-  const send = (payload: unknown) => {
-    if (sock.current?.readyState === WebSocket.OPEN) {
-      sock.current.send(JSON.stringify(payload));
+  // Only STT transcripts are sent to the backend now
+  const sendTranscript = (text: string) => {
+    const ws = sockRef.current;
+    if (ws?.readyState === WebSocket.OPEN) {
+      ws.send(JSON.stringify({ type: 'transcript', text }));
     }
   };
 
-  return {
-    sendTranscript: (text: string) => send({ type: 'transcript', text }),
-    sendVAD: (
-      status: 'speech_start' | 'silence_start',
-      dur?: 'short' | 'long'
-    ) => send({ type: 'vad', status, dur }),
-    isConnected,
-  };
+  return { sendTranscript, isConnected };
 }

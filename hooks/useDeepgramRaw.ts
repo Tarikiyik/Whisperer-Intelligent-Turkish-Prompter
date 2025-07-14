@@ -63,7 +63,6 @@ export default function useDeepgramRaw(
         const dg  = createClient(key);
 
         // 4) Open Deepgram live transcription stream
-        console.log("Opening Deepgram connection...");
         live = dg.listen.live({
           encoding: 'linear16',
           sample_rate: 16000,
@@ -75,7 +74,6 @@ export default function useDeepgramRaw(
 
         // 5) Wire up event handlers
         live.on(LiveTranscriptionEvents.Open, () => {
-          console.log("✅ Deepgram connection opened");
           workletNode!.port.onmessage = ({ data }) => {
             if (live && live.getReadyState() === WebSocket.OPEN) {
               live.send(data);
@@ -87,7 +85,6 @@ export default function useDeepgramRaw(
           if (msg.is_final) {
             const text = msg.channel.alternatives[0]?.transcript.trim();
             if (text && text !== lastTextRef) {
-              console.log("✅ Final transcript:", text);
               lastTextRef = text;
               onFinalRef.current(text);
               backendSendRef.current?.(text);
@@ -100,7 +97,6 @@ export default function useDeepgramRaw(
         });
 
         live.on(LiveTranscriptionEvents.Close, () => {
-          console.log("Deepgram connection closed");
         });
 
       } catch (error) {
@@ -112,7 +108,6 @@ export default function useDeepgramRaw(
 
     // 6) Cleanup function
     return () => {
-      console.log("🧹 Cleaning up resources");
       if (live) live.requestClose();
       if (workletNode) workletNode.disconnect();
       if (audioCtx) audioCtx.close();

@@ -40,7 +40,6 @@ export function usePromptPlayer() {
       // Retry logic - attempt up to 3 retries
       if (retryCount < 3) {
         const delay = Math.pow(2, retryCount) * 500; // 500ms, 1s, 2s
-        console.log(`Retrying TTS request in ${delay}ms (attempt ${retryCount + 1}/3)`);
         
         setTimeout(() => {
           playPrompt(idx, retryCount + 1);

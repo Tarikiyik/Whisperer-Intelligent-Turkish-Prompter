@@ -48,7 +48,6 @@ export function VADProvider({ children }: { children: ReactNode }) {
   const updateVadSettings = useCallback((newLongMs: number) => {
     setLongMs(newLongMs);
     longMsRef.current = newLongMs;
-    console.log(`[VAD] Updated long silence to ${newLongMs}ms`);
   }, []);
 
   // create & start VAD only once
@@ -84,7 +83,6 @@ export function VADProvider({ children }: { children: ReactNode }) {
         setIsSpeaking(true);
         setSilenceType(null);
         setLastEvent('speech_start');
-        console.log('[VAD] speech_start');
         clearTimeout(silenceT.current);
         clearTimeout(longT.current);
       },
@@ -98,14 +96,12 @@ export function VADProvider({ children }: { children: ReactNode }) {
           setIsSpeaking(false);
           setSilenceType('short');
           setLastEvent('silence_short');
-          console.log('[VAD] silence_short');
         }, SHORT_MS);
 
         longT.current = setTimeout(() => {
           if (!speakingRef.current) {
             setSilenceType('long');
             setLastEvent('silence_long');
-            console.log('[VAD] silence_long');
           }
         }, longMsRef.current); // Use the ref value for dynamic updates
       }
@@ -113,7 +109,6 @@ export function VADProvider({ children }: { children: ReactNode }) {
 
     await vad.start();
     vadRef.current = vad;
-    console.log('[VAD] started');
   }, []);
 
   // stop VAD (pause + free mic)
@@ -133,7 +128,6 @@ export function VADProvider({ children }: { children: ReactNode }) {
     setSilenceType(null);           // reset the silence type
     setLastEvent(null);             // reset the last event
 
-    console.log('[VAD] stopped & mic released');
   }, []);
 
   // provider cleanup (rare)

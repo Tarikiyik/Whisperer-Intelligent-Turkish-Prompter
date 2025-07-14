@@ -18,9 +18,11 @@ Whisperer is a real-time intelligent teleprompter system designed for Turkish sp
 ## Tech Stack
 
 - **Frontend**: Next.js (React, TypeScript), Tailwind CSS, Deepgram JS SDK, @ricky0123/vad-web (browser VAD)
-- **Backend**: [Whisperer Backend (Python/FastAPI)](https://github.com/CagatayKahramann/whisperer)
-  - Python 3.10+, FastAPI, SentenceTransformer (fine-tuned LaBSE), Google Cloud Text-to-Speech, WebSockets, REST API for settings
+- **Backend**:  Python 3.10+, FastAPI, SentenceTransformer (fine-tuned LaBSE), Google Cloud Text-to-Speech, WebSockets, REST API for settings
 
+> **Note:**  
+> An initial prototype of the backend, which operates without a web interface and can be used for local/scripted testing, is available here:  
+> [Whisperer Backend (Python)](https://github.com/CagatayKahramann/whisperer)
 ---
 
 ## Installation and Setup
@@ -31,10 +33,6 @@ Whisperer is a real-time intelligent teleprompter system designed for Turkish sp
 - Deepgram API Key
 - Google Cloud TTS Service Account JSON
 
-**Important:**  
-The backend is managed in a separate repository:  
-👉 [https://github.com/CagatayKahramann/whisperer](https://github.com/CagatayKahramann/whisperer)  
-Follow the backend repo's README for more detailed setup and API requirements for backend. The frontend assumes the backend requirements already met.
 
 ### 1. Clone the Repository
 
@@ -56,7 +54,17 @@ Create a `.env` file in the root and put your Deepgram key as below:
 NEXT_PUBLIC_DEEPGRAM_KEY=your_deepgram_api_key
 ```
 
-### 3. Running the Application
+### 3. Backend Setup
+
+Install all the required Python packages using the provided `requirements.txt` file:
+  ```
+  cd backend
+  pip install -r requirements.txt
+  ```
+
+Place your Google Cloud TTS JSON as `secrets/google-tts-key.json` inside the backend directory.
+
+### 4. Running the Application
 
 - **First, run the development server:**
 ```bash

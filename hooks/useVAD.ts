@@ -25,4 +25,5 @@ export default function useVAD(started: boolean) {
   }, [started, startVAD, stopVAD]);
 
   return { isSpeaking, silenceType, lastEvent };
+
 }

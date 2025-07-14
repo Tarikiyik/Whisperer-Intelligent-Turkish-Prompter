@@ -5,6 +5,7 @@ Debug output prints the expected segment, what was actually heard, and the simil
 """
 
 import os, time, asyncio, logging, re
+
 from text_segmentation import segment_script, segment_sentences
 from sentence_transformers import SentenceTransformer, util
 
@@ -88,9 +89,11 @@ class SpeechMonitor:
             if new_mtime > mtime:
                 mtime = new_mtime
 
+
             # Asynchronously read the transcript file
             with open(self.file, "r", encoding="utf-8") as fh:
                 txt = fh.read()
+
 
             # If nothing new, skip
             if txt == self.last_tx:
